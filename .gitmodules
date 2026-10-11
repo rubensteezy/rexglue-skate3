@@ -43,7 +43,8 @@
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "thirdparty/imgui"]
 	path = thirdparty/imgui
-	url = https://github.com/ocornut/imgui.git
+	url = https://github.com/rubensteezy/imgui.git
+	branch = rexglue-v1.92.5
 [submodule "thirdparty/spirv-tools"]
 	path = thirdparty/spirv-tools
 	url = https://github.com/KhronosGroup/SPIRV-Tools.git
