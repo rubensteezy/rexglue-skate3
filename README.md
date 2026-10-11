@@ -1,3 +1,6 @@
+> [!NOTE]
+> This is the **Skate 3 fork** of ReXGlue, used by the [Skate 3 recompilation](https://github.com/rubensteezy/skate3recomp). For general ReXGlue use, start from the official [rexglue/rexglue-sdk](https://github.com/rexglue/rexglue-sdk). See [About This Fork](#about-this-fork).
+
 > [!CAUTION]
 > This project is in early development. Expect things to not work quite right and there to be significant changes and breaking public API updates as development progresses. Contributions and feedback are welcome, but please be aware that the codebase is still evolving rapidly.
 
@@ -22,7 +25,22 @@ ReXGlue is heavily rooted on the foundations of [Xenia](https://github.com/xenia
 
 Latest SDK builds and releases are published on [GitHub Releases](https://github.com/rexglue/rexglue-sdk/releases). Join the [Discord server](https://discord.gg/CNTxwSNZfT) for updates and share what you have created.
 
-## Builds
+## About This Fork
+
+This repository is the Skate 3-specific ReXGlue fork, consumed as the `third_party/rexglue-sdk` submodule of [rubensteezy/skate3recomp](https://github.com/rubensteezy/skate3recomp) and tracked on the `skate3-sdk-clean` branch. It continues [mchughalex/rexglue-skate3](https://github.com/mchughalex/rexglue-skate3), which went inactive along with the original Skate 3 recompilation in July 2026.
+
+The fork is based on ReXGlue's 0.8 release line. On top of it, it carries the Skate 3 runtime, codegen, input and timing work, the Direct3D 12 and Vulkan backends used by the game's native renderer, the settings overlay, and the Linux and macOS fixes the game needs.
+
+Changes made since the fork continued:
+
+- **Direct3D 12 descriptor heap fix:** the shader-visible view heap's slot allocator now reuses freed ranges of any size, and trims idle binding tables under pressure. Before, every evicted multi-texture binding table leaked its slots during world streaming until the heap ran out and the device was removed. A failed table bind now skips the draw instead of sampling an unset table.
+- **Fetchable imgui:** the imgui submodule pointed at commits that were never pushed to [ocornut/imgui](https://github.com/ocornut/imgui), so fresh recursive clones failed. It now comes from [rubensteezy/imgui](https://github.com/rubensteezy/imgui) (branch `rexglue-v1.92.5`): imgui 1.92.5 plus the `ImFontConfig::RasterizerGamma` coverage gamma that `src/ui/imgui_drawer.cpp` uses.
+
+This fork is normally built as part of the game: the game's CMake adds it as a subdirectory, so there is no separate build step. Report Skate 3 issues, including ones caused by the SDK, on [rubensteezy/skate3recomp](https://github.com/rubensteezy/skate3recomp/issues). SDK changes land on `skate3-sdk-clean` here first, then the game repository bumps the submodule; see its [contributing guide](https://github.com/rubensteezy/skate3recomp/blob/main/CONTRIBUTING.md).
+
+## Upstream Builds
+
+The builds and releases below are official ReXGlue's, not this fork's.
 
 | Channel | CI | Download |
 | --- | --- | --- |
@@ -52,6 +70,10 @@ This project is not intended to promote piracy nor unauthorized use of copyright
 - [Roxxsen](https://github.com/Roxxsen) - CI/CD Contributor
 
 The list above is not exhaustive. Thanks to everyone in the ReXGlue community who contributes code, files issues, tests builds, and keeps the project moving.
+
+## Skate 3 Fork
+- [mchughalex](https://github.com/mchughalex) - Original Skate 3 fork: runtime, native renderer backends, and platform fixes
+- [rubensteezy](https://github.com/rubensteezy) - Fork maintenance since October 2026
 
 ## Very Special Thank You:
 - [Project Xenia](https://github.com/xenia-project/xenia/tree/master/src/xenia) - Their invaluable work on Xbox 360 emulation laid the groundwork for ReXGlue's development. This project (and numerous others) would not exist without their hard work and dedication.
