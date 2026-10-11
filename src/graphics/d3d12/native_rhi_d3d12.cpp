@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -319,20 +320,41 @@ class NrPipelineD3D12 : public nrhi::Pipeline {
   ID3D12PipelineState* pso = nullptr;
 };
 
-// A simple slot allocator over a fixed-size descriptor heap with
-// submission-keyed retirement (mirrors the scene renderer's original
-// srv_next/srv_free/retired_srv_slots machinery).
+// A range allocator over a fixed-size descriptor heap with submission-keyed
+// retirement. Freed ranges are coalesced and reused best-fit for any count:
+// binding tables are multi-slot, and a free list that only served single
+// slots let every evicted table leak its range until the bump pointer hit
+// capacity and every later table allocation failed for the session.
 struct SlotAllocator {
   uint32_t capacity = 0;
   uint32_t next = 0;
-  std::vector<uint32_t> free_list;
+  uint32_t free_slots = 0;
+  // Free ranges below `next`: first -> count, and (count, first) for
+  // best-fit lookup. Adjacent ranges are always merged.
+  std::map<uint32_t, uint32_t> free_by_first;
+  std::set<std::pair<uint32_t, uint32_t>> free_by_count;
   // (first_slot, count, submission)
   std::vector<std::pair<std::pair<uint32_t, uint32_t>, uint64_t>> retired;
 
+  uint32_t used() const { return next - free_slots; }
+  uint32_t largest_free() const {
+    const uint32_t tail = capacity - next;
+    return free_by_count.empty() ? tail : std::max(tail, free_by_count.rbegin()->first);
+  }
+
   bool Alloc(uint32_t count, uint32_t* out) {
-    if (count == 1 && !free_list.empty()) {
-      *out = free_list.back();
-      free_list.pop_back();
+    auto fit = free_by_count.lower_bound({count, 0});
+    if (fit != free_by_count.end()) {
+      const uint32_t size = fit->first;
+      const uint32_t first = fit->second;
+      free_by_count.erase(fit);
+      free_by_first.erase(first);
+      if (size > count) {
+        free_by_first.emplace(first + count, size - count);
+        free_by_count.emplace(size - count, first + count);
+      }
+      free_slots -= count;
+      *out = first;
       return true;
     }
     if (next + count <= capacity) {
@@ -342,15 +364,39 @@ struct SlotAllocator {
     }
     return false;
   }
+  void Free(uint32_t first, uint32_t count) {
+    free_slots += count;
+    auto after = free_by_first.lower_bound(first);
+    if (after != free_by_first.end() && first + count == after->first) {
+      count += after->second;
+      free_by_count.erase({after->second, after->first});
+      after = free_by_first.erase(after);
+    }
+    if (after != free_by_first.begin()) {
+      auto before = std::prev(after);
+      if (before->first + before->second == first) {
+        first = before->first;
+        count += before->second;
+        free_by_count.erase({before->second, before->first});
+        free_by_first.erase(before);
+      }
+    }
+    if (first + count == next) {
+      // Give a range touching the bump pointer back to the untouched tail.
+      next = first;
+      free_slots -= count;
+      return;
+    }
+    free_by_first.emplace(first, count);
+    free_by_count.emplace(count, first);
+  }
   void Retire(uint32_t first, uint32_t count, uint64_t submission) {
     retired.emplace_back(std::make_pair(first, count), submission);
   }
   void Drain(uint64_t completed) {
     std::erase_if(retired, [&](const auto& entry) {
       if (entry.second < completed) {
-        for (uint32_t i = 0; i < entry.first.second; ++i) {
-          free_list.push_back(entry.first.first + i);
-        }
+        Free(entry.first.first, entry.first.second);
         return true;
       }
       return false;
@@ -406,6 +452,7 @@ class NrCmdD3D12 : public nrhi::Cmd {
   void ResetFrameState() {
     std::memset(last_table_views_, 0, sizeof(last_table_views_));
     std::memset(last_table_counts_, 0, sizeof(last_table_counts_));
+    failed_table_params_ = 0;
   }
 
   // Frame begin only (never on root-signature changes): each frame gets a
@@ -431,6 +478,12 @@ class NrCmdD3D12 : public nrhi::Cmd {
   NrTextureViewD3D12* last_table_views_[nrhi::kMaxBindingParams]
                                        [nrhi::kMaxTextureTableSize] = {};
   uint32_t last_table_counts_[nrhi::kMaxBindingParams] = {};
+  // Root params whose latest table bind failed (heap exhausted). Draws are
+  // skipped while any is set: the param would otherwise hold the previous
+  // draw's table, or nothing at all right after a root-signature change,
+  // and sampling an unset table faults the GPU (device removal).
+  uint32_t failed_table_params_ = 0;
+  static_assert(nrhi::kMaxBindingParams <= 32);
 };
 
 class NrDeviceD3D12 : public nrhi::Device {
@@ -955,15 +1008,27 @@ class NrDeviceD3D12 : public nrhi::Device {
     const auto drain_t0 = std::chrono::steady_clock::now();
     size_t released = 0;
     size_t backlog = 0;
+    ++frame_index_;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       released = DrainRetired(cp_->GetCompletedSubmission());
       backlog = retired_.size();
+      // Binding tables otherwise live as long as all their views, so tuples
+      // of long-lived views accumulate. Under pressure, evict the ones idle
+      // for a couple of seconds (at most once a second).
+      if (srv_slots_.used() > srv_slots_.capacity / 4 * 3 &&
+          frame_index_ - last_binding_trim_frame_ >= kBindingTrimIntervalFrames) {
+        last_binding_trim_frame_ = frame_index_;
+        const size_t trimmed = frame_index_ > kBindingIdleFrames
+                                   ? TrimBindingsLocked(frame_index_ - kBindingIdleFrames)
+                                   : 0;
+        REXLOG_INFO("nrhi-d3d12: view heap {}/{} used, trimmed {} idle bindings ({} left)",
+                    srv_slots_.used(), srv_slots_.capacity, trimmed, bindings_.size());
+      }
     }
     // Periodic VRAM budget line (mirrors the Vulkan backend's): local =
     // dedicated VRAM this process holds, the number that ratchets when a
     // cache retains superseded content across map changes.
-    ++frame_index_;
     if (adapter3_ != nullptr && (frame_index_ % 600) == 0) {
       DXGI_QUERY_VIDEO_MEMORY_INFO local{};
       DXGI_QUERY_VIDEO_MEMORY_INFO nonlocal{};
@@ -973,9 +1038,10 @@ class NrDeviceD3D12 : public nrhi::Device {
               0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &nonlocal))) {
         REXLOG_INFO(
             "nrhi-d3d12 mem: local use={}MB budget={}MB | nonlocal use={}MB "
-            "budget={}MB | retired={}",
+            "budget={}MB | retired={} | views={}/{} bindings={}",
             local.CurrentUsage >> 20, local.Budget >> 20,
-            nonlocal.CurrentUsage >> 20, nonlocal.Budget >> 20, backlog);
+            nonlocal.CurrentUsage >> 20, nonlocal.Budget >> 20, backlog,
+            srv_slots_.used(), srv_slots_.capacity, bindings_.size());
       }
     }
     // Frame-maintenance attribution (this work runs outside the app's
@@ -1087,7 +1153,21 @@ class NrDeviceD3D12 : public nrhi::Device {
       {
         std::lock_guard<std::mutex> lock(mutex_);
         if (!srv_slots_.Alloc(count, &first_slot)) {
-          REXLOG_ERROR("nrhi-d3d12: shader-visible view heap exhausted");
+          // Retire everything this frame has not bound; the slots come back
+          // once the GPU passes the current submission. This request still
+          // fails (the caller skips the draw rather than leave a stale or
+          // unset table bound).
+          const size_t trimmed = TrimBindingsLocked(frame_index_);
+          ++binding_failures_;
+          const auto now = std::chrono::steady_clock::now();
+          if (now - last_binding_failure_log_ >= std::chrono::seconds(1)) {
+            last_binding_failure_log_ = now;
+            REXLOG_ERROR(
+                "nrhi-d3d12: shader-visible view heap exhausted ({} failures; "
+                "used={}/{} largest_free={} bindings={} trimmed={})",
+                binding_failures_, srv_slots_.used(), srv_slots_.capacity,
+                srv_slots_.largest_free(), bindings_.size(), trimmed);
+          }
           return false;
         }
       }
@@ -1097,7 +1177,9 @@ class NrDeviceD3D12 : public nrhi::Device {
                                        StagingHandle(views[i]->staging_slot),
                                        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
       }
-      it = bindings_.emplace(key, Binding{first_slot, count}).first;
+      it = bindings_.emplace(key, Binding{first_slot, count, frame_index_}).first;
+    } else {
+      it->second.last_used_frame = frame_index_;
     }
     *gpu_out = SrvGpuHandle(it->second.first_slot);
     return true;
@@ -1112,6 +1194,8 @@ class NrDeviceD3D12 : public nrhi::Device {
   static constexpr uint32_t kShaderVisibleViews = 32768;
   static constexpr uint32_t kRtvSlots = 64;
   static constexpr uint32_t kDsvSlots = 8;
+  static constexpr uint64_t kBindingIdleFrames = 120;
+  static constexpr uint64_t kBindingTrimIntervalFrames = 60;
 
   struct RetiredObject {
     ID3D12Resource* resource;
@@ -1132,7 +1216,23 @@ class NrDeviceD3D12 : public nrhi::Device {
   struct Binding {
     uint32_t first_slot;
     uint32_t count;
+    uint64_t last_used_frame;
   };
+
+  // Retires every cached binding last bound before `before_frame`. Safe for
+  // any binding not bound in the frame being recorded: per-param tuple
+  // latches reset at frame begin, and the slots are only reused after the
+  // current submission completes. Callers hold mutex_.
+  size_t TrimBindingsLocked(uint64_t before_frame) {
+    const uint64_t submission = cp_->GetCurrentSubmission();
+    return std::erase_if(bindings_, [&](auto& entry) {
+      if (entry.second.last_used_frame < before_frame) {
+        srv_slots_.Retire(entry.second.first_slot, entry.second.count, submission);
+        return true;
+      }
+      return false;
+    });
+  }
 
   // Hands GPU-completed retirements to the release thread. Committed
   // resource Release calls are kernel-priced (~150 us each measured); a
@@ -1223,6 +1323,9 @@ class NrDeviceD3D12 : public nrhi::Device {
   SlotAllocator dsv_slots_;
   std::vector<RetiredObject> retired_;
   std::map<BindingKey, Binding> bindings_;
+  uint64_t binding_failures_ = 0;
+  std::chrono::steady_clock::time_point last_binding_failure_log_{};
+  uint64_t last_binding_trim_frame_ = 0;
   // Views destroyed since the last FlushDissolvedViews (render thread only).
   // The objects stay allocated until the flush so stale binding-cache keys
   // can never collide with a newly created view at the same address.
@@ -1273,6 +1376,11 @@ void NrCmdD3D12::BindTextureTable(uint32_t param, NrTextureViewD3D12* const* vie
     device->cp()->GetDeferredCommandList().D3DSetGraphicsRootDescriptorTable(param, handle);
     std::memcpy(last_table_views_[param], views, count * sizeof(views[0]));
     last_table_counts_[param] = count;
+    failed_table_params_ &= ~(1u << param);
+  } else {
+    // Unlatch so the next bind of any tuple on this param retries.
+    last_table_counts_[param] = 0;
+    failed_table_params_ |= 1u << param;
   }
 }
 
@@ -1371,10 +1479,12 @@ void NrCmdD3D12::SetPrimitiveTopology(nrhi::PrimitiveTopology topology) {
 }
 
 void NrCmdD3D12::Draw(uint32_t vertex_count, uint32_t start_vertex) {
+  if (failed_table_params_ != 0) return;
   device->cp()->GetDeferredCommandList().D3DDrawInstanced(vertex_count, 1, start_vertex, 0);
 }
 
 void NrCmdD3D12::DrawIndexed(uint32_t index_count, uint32_t start_index, int32_t base_vertex) {
+  if (failed_table_params_ != 0) return;
   device->cp()->GetDeferredCommandList().D3DDrawIndexedInstanced(index_count, 1, start_index,
                                                                  base_vertex, 0);
 }
