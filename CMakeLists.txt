@@ -83,14 +83,6 @@ elseif(UNIX AND NOT APPLE)
         "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
     )
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
-elseif(APPLE)
-    # Use loader-relative install names on macOS so installed binaries remain
-    # self-contained within the install prefix.
-    list(APPEND CMAKE_INSTALL_RPATH
-        "@loader_path"
-        "@loader_path/../${CMAKE_INSTALL_LIBDIR}"
-    )
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 endif()
 
 # Enforce a Clang toolchain (LLVM Clang or Apple's Clang)
