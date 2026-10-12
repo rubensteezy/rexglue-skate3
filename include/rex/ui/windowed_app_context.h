@@ -77,6 +77,12 @@ class WindowedAppContext {
   // function safely).
   void ExecutePendingFunctionsFromUIThread() { ExecutePendingFunctionsFromUIThread(false); }
 
+  // Handles every platform event already queued, without blocking, for UI
+  // thread code that runs its own loop while the main loop is not running (a
+  // modal wizard shown before the runtime starts, for instance). Pending UI
+  // functions are executed as part of this.
+  virtual void PumpEventsFromUIThread() { ExecutePendingFunctionsFromUIThread(); }
+
   // If on the target platform, the program itself is supposed to run the UI
   // loop, this may be checked before doing blocking message waits as an
   // additional safety measure beyond what PlatformQuitFromUIThread guarantees,

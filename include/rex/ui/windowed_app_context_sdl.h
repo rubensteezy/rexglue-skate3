@@ -35,6 +35,7 @@ class SDLWindowedAppContext final : public WindowedAppContext {
   void PlatformQuitFromUIThread() override;
 
   int RunMainMessageLoop();
+  void PumpEventsFromUIThread() override;
 
   // Custom SDL event type carrying a coalesced paint request for a window
   // (user.windowID identifies the target).
