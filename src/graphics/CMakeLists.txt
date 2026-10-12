@@ -110,6 +110,22 @@ set_target_properties(rexgpu-xenos PROPERTIES
     VISIBILITY_INLINES_HIDDEN ON
 )
 
+# The plugin is always staged or installed next to librexruntime, so resolve
+# it relative to the plugin itself. The default build rpath would otherwise be
+# the absolute SDK output dir (out/<platform>, outside a parent project's build
+# tree), leaking the build machine path into shipped binaries.
+if(UNIX AND NOT APPLE)
+    set_target_properties(rexgpu-xenos PROPERTIES
+        INSTALL_RPATH "$ORIGIN"
+        BUILD_WITH_INSTALL_RPATH ON
+    )
+elseif(APPLE)
+    set_target_properties(rexgpu-xenos PROPERTIES
+        INSTALL_RPATH "@loader_path"
+        BUILD_WITH_INSTALL_RPATH ON
+    )
+endif()
+
 if(REXGLUE_GPU_PLUGIN_LINKABLE)
     # Export the whole GPU layer so hosts can link the plugin directly (see
     # rexglue_configure_target). Still loaded through LoadGpuPlugin at runtime.
