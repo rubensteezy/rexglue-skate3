@@ -92,44 +92,6 @@ bool CreateEmptyFile(const std::filesystem::path& path) {
   return true;
 }
 
-FILE* OpenFile(const std::filesystem::path& path, const std::string_view mode) {
-  // Dumb, but OK.
-  const auto wmode = rex::string::to_utf16(mode);
-  FILE* file = nullptr;
-  if (_wfopen_s(&file, path.c_str(), reinterpret_cast<const wchar_t*>(wmode.c_str())) != 0) {
-    return nullptr;
-  }
-  return file;
-}
-
-bool Seek(FILE* file, int64_t offset, int origin) {
-  return _fseeki64(file, offset, origin) == 0;
-}
-
-int64_t Tell(FILE* file) {
-  return _ftelli64(file);
-}
-
-bool TruncateStdioFile(FILE* file, uint64_t length) {
-  // Flush is necessary - if not flushing, stream position may be out of sync.
-  if (fflush(file)) {
-    return false;
-  }
-  int64_t position = Tell(file);
-  if (position < 0) {
-    return false;
-  }
-  if (_chsize_s(_fileno(file), int64_t(length))) {
-    return false;
-  }
-  if (uint64_t(position) > length) {
-    if (!Seek(file, 0, SEEK_END)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 class Win32FileHandle : public FileHandle {
  public:
   Win32FileHandle(const std::filesystem::path& path, HANDLE handle)

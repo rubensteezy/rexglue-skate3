@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <filesystem>
 #include <iterator>
 #include <memory>
@@ -20,6 +21,10 @@
 
 #include <rex/platform.h>
 #include <rex/string.h>
+
+#if REX_PLATFORM_WIN32
+#include <io.h>
+#endif
 
 namespace rex {
 
@@ -55,6 +60,56 @@ bool CreateParentFolder(const std::filesystem::path& path);
 // Creates an empty file at the given path, overwriting if it exists.
 bool CreateEmptyFile(const std::filesystem::path& path);
 
+#if REX_PLATFORM_WIN32
+// On Windows these are inline: with the static MSVC runtime every module (the
+// runtime DLL, GPU plugins, the host executable, tools) has its own CRT, and a
+// FILE* is only valid with the CRT that opened it. Defining them in the caller
+// keeps the open and every later stdio call on the same CRT.
+
+// Opens the file at the given path with the specified mode.
+// This behaves like fopen and the returned handle can be used with stdio.
+inline FILE* OpenFile(const std::filesystem::path& path, const std::string_view mode) {
+  std::wstring wmode(mode.begin(), mode.end());
+  FILE* file = nullptr;
+  if (_wfopen_s(&file, path.c_str(), wmode.c_str()) != 0) {
+    return nullptr;
+  }
+  return file;
+}
+
+// Wrapper for the 64-bit version of fseek, returns true on success.
+inline bool Seek(FILE* file, int64_t offset, int origin) {
+  return _fseeki64(file, offset, origin) == 0;
+}
+
+// Wrapper for the 64-bit version of ftell, returns a positive value on success.
+inline int64_t Tell(FILE* file) {
+  return _ftelli64(file);
+}
+
+// Reduces the size of a stdio file opened for writing. The file pointer is
+// clamped. If this returns false, the size of the file and the file pointer are
+// undefined.
+inline bool TruncateStdioFile(FILE* file, uint64_t length) {
+  // Flush is necessary - if not flushing, stream position may be out of sync.
+  if (fflush(file)) {
+    return false;
+  }
+  int64_t position = Tell(file);
+  if (position < 0) {
+    return false;
+  }
+  if (_chsize_s(_fileno(file), int64_t(length))) {
+    return false;
+  }
+  if (uint64_t(position) > length) {
+    if (!Seek(file, 0, SEEK_END)) {
+      return false;
+    }
+  }
+  return true;
+}
+#else
 // Opens the file at the given path with the specified mode.
 // This behaves like fopen and the returned handle can be used with stdio.
 FILE* OpenFile(const std::filesystem::path& path, const std::string_view mode);
@@ -69,6 +124,7 @@ int64_t Tell(FILE* file);
 // clamped. If this returns false, the size of the file and the file pointer are
 // undefined.
 bool TruncateStdioFile(FILE* file, uint64_t length);
+#endif
 
 struct FileAccess {
   // Implies kFileReadData.
