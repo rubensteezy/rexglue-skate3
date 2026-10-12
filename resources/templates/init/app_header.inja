@@ -13,15 +13,19 @@ class {{ names.pascal_case }}App : public rex::ReXApp {
   static std::unique_ptr<rex::ui::WindowedApp> Create(
       rex::ui::WindowedAppContext& ctx) {
     return std::unique_ptr<{{ names.pascal_case }}App>(new {{ names.pascal_case }}App(ctx, "{{ names.snake_case }}",
-        PPCImageConfig));
+        {{ names.snake_case }}_PPCImageConfig));
   }
 
   // Override virtual hooks for customization:
   // void OnPostInitLogging() override {}
   // void OnPreSetup(rex::RuntimeConfig& config) override {}
   // void OnLoadXexImage(std::string& xex_image) override {}
+  // void OnPostLoadXexImage() override {}
   // void OnPostSetup() override {}
   // void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {}
+  // std::unique_ptr<rex::ui::ImGuiDialog> CreateAchievementsOverlay() override;
+  // std::unique_ptr<rex::ui::AchievementNotificationDialog>
+  // CreateAchievementNotificationDialog() override;
   // void OnShutdown() override {}
   // void OnConfigurePaths(rex::PathConfig& paths) override {}
 };
