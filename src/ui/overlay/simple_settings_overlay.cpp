@@ -665,9 +665,8 @@ void ApplyGraphicsDevice(const GraphicsDeviceList& device_list, int index) {
   index = std::clamp(index, 0, static_cast<int>(device_list.device_names.size()) - 1);
   // Selecting the device automatic selection already picked keeps the cvar
   // automatic, so new hardware still re-picks the best adapter.
-  rex::cvar::SetFlagByName(device_list.cvar_name, index == device_list.active_index
-                                                      ? "-1"
-                                                      : std::to_string(index));
+  rex::cvar::SetFlagByName(device_list.cvar_name,
+                           index == device_list.active_index ? "-1" : std::to_string(index));
 }
 
 void ApplyRenderScale(int index) {
@@ -701,9 +700,8 @@ void ApplyFrameCap(int index) {
     const bool capped = index < FrameCapUnlimitedIndex();
     SetBoolCvar("d3d12_present_frame_limiter", capped);
     if (capped) {
-      rex::cvar::SetFlagByName(
-          "d3d12_present_frame_limiter_fps",
-          std::to_string(kFrameCapRates[index - FrameCapRateBaseIndex()]));
+      rex::cvar::SetFlagByName("d3d12_present_frame_limiter_fps",
+                               std::to_string(kFrameCapRates[index - FrameCapRateBaseIndex()]));
     }
   }
 }
@@ -1074,9 +1072,9 @@ std::vector<RestartSetting> GetRestartSettings() {
     settings.push_back({std::move(id), std::move(label), std::move(desc), std::move(options),
                         std::move(current), std::move(apply)});
   };
-  auto bool_cvar = [&add](std::string id, std::string label, std::string desc,
-                          std::string cvar) {
-    add(std::move(id), std::move(label), std::move(desc), {"Off", "On"},
+  auto bool_cvar = [&add](std::string id, std::string label, std::string desc, std::string cvar) {
+    add(
+        std::move(id), std::move(label), std::move(desc), {"Off", "On"},
         [cvar] { return rex::cvar::Query<bool>(cvar) ? 1 : 0; },
         [cvar](int value) { SetBoolCvar(cvar, value != 0); });
   };
@@ -1096,7 +1094,8 @@ std::vector<RestartSetting> GetRestartSettings() {
     for (size_t i = 0; i < devices.device_names.size(); ++i) {
       options.push_back(std::to_string(i) + ": " + devices.device_names[i]);
     }
-    add("graphics_device", "Graphics Device",
+    add(
+        "graphics_device", "Graphics Device",
         "Which GPU renders the game. The highest-performance adapter is selected "
         "automatically.",
         std::move(options), [devices] { return DeviceIndexFromCvar(devices); },
@@ -1113,14 +1112,14 @@ std::vector<RestartSetting> GetRestartSettings() {
         FrameCapOptionLabels(), FrameCapIndexFromCvar, ApplyFrameCap);
   }
   if (HasCvar("skate3_ultrawide")) {
-    add("aspect_ratio", "Aspect Ratio",
+    add(
+        "aspect_ratio", "Aspect Ratio",
         "21:9 widens the world rendering for ultrawide displays. Requires the native "
         "renderer.",
         labels(kAspectRatioLabels),
         [] { return rex::cvar::Query<bool>("skate3_ultrawide") ? 1 : 0; }, ApplyAspectRatio);
   }
-  bool_cvar("fullscreen", "Fullscreen", "Borderless fullscreen instead of a window.",
-            "fullscreen");
+  bool_cvar("fullscreen", "Fullscreen", "Borderless fullscreen instead of a window.", "fullscreen");
   if (HasCvar("monitor")) {
     add("monitor", "Monitor",
         "Which display the game window opens on. Auto uses the primary display.",
@@ -1130,7 +1129,8 @@ std::vector<RestartSetting> GetRestartSettings() {
             "Waits for the display before presenting frames. Adds latency; not "
             "recommended.",
             "vsync");
-  add("tearing", "VRR / Tearing",
+  add(
+      "tearing", "VRR / Tearing",
       "Allows uncapped presentation on variable-refresh-rate displays (G-Sync / "
       "FreeSync). Recommended on.",
       {"Off", "On"}, [] { return TearingFromCvar() ? 1 : 0; },
@@ -1171,8 +1171,8 @@ std::vector<RestartSetting> GetRestartSettings() {
         labels(kAudioBufferLabels), AudioBufferIndexFromCvar, ApplyAudioBuffer);
   }
   if (HasCvar("user_language")) {
-    add("language", "Game Language", "The language Skate 3 boots in.",
-        labels(kLanguageLabels), LanguageIndexFromCvar, ApplyLanguage);
+    add("language", "Game Language", "The language Skate 3 boots in.", labels(kLanguageLabels),
+        LanguageIndexFromCvar, ApplyLanguage);
   }
   return settings;
 }
