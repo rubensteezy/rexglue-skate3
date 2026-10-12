@@ -37,21 +37,14 @@ namespace rex::ui {
 namespace {
 
 constexpr std::array<int32_t, 3> kResolutionScales = {1, 2, 3};
-constexpr std::array<const char*, 3> kResolutionLabels = {"720p (1x)", "1440p (2x)",
-                                                          "2160p (3x)"};
+constexpr std::array<const char*, 3> kResolutionLabels = {"720p (1x)", "1440p (2x)", "2160p (3x)"};
 constexpr std::array<const char*, 2> kAspectRatioLabels = {"16:9", "21:9 (Experimental)"};
 constexpr std::array<double, 6> kFrameCapRates = {60.0, 90.0, 120.0, 144.0, 165.0, 240.0};
-constexpr std::array<const char*, 7> kFrameCapLabels = {"Unlimited", "60 FPS",  "90 FPS",
-                                                        "120 FPS",   "144 FPS", "165 FPS",
-                                                        "240 FPS"};
+constexpr std::array<const char*, 7> kFrameCapLabels = {"Unlimited", "60 FPS",  "90 FPS", "120 FPS",
+                                                        "144 FPS",   "165 FPS", "240 FPS"};
 constexpr std::array<std::string_view, 7> kCoreSimpleSettingsCvars = {
-    "resolution_scale",
-    "draw_resolution_scale_x",
-    "draw_resolution_scale_y",
-    "fullscreen",
-    "vsync",
-    "mnk_mode",
-    "mnk_capture_mouse"};
+    "resolution_scale", "draw_resolution_scale_x", "draw_resolution_scale_y", "fullscreen", "vsync",
+    "mnk_mode",         "mnk_capture_mouse"};
 // Optional cvars persisted when the host defines them (HasCvar-gated: app
 // cvars like the native-renderer knobs don't exist in every embedder, and
 // backend/platform cvars don't exist in every build).
@@ -88,38 +81,37 @@ constexpr std::array<int32_t, 4> kMsaaSamples = {1, 2, 4, 8};
 // Shadow quality: dynamic-shadow toggle + cascade tile resolution. The
 // game's own atlas is three 512 tiles ("Console"); tile 0 = auto (512 x
 // the output resolution scale, the emulated renderer's effective raster).
-constexpr std::array<const char*, 6> kShadowQualityLabels = {
-    "Off", "Auto", "512 (console)", "1024", "1536", "2048"};
+constexpr std::array<const char*, 6> kShadowQualityLabels = {"Off",  "Auto", "512 (console)",
+                                                             "1024", "1536", "2048"};
 constexpr std::array<int32_t, 6> kShadowQualityTiles = {0, 0, 512, 1024, 1536, 2048};
 
 // Enhanced (static sun) shadow map resolution per cascade tile.
-constexpr std::array<const char*, 4> kStaticShadowResLabels = {"1024", "2048",
-                                                               "4096", "8192"};
-constexpr std::array<int32_t, 4> kStaticShadowResSizes = {1024, 2048, 4096,
-                                                          8192};
+constexpr std::array<const char*, 4> kStaticShadowResLabels = {"1024", "2048", "4096", "8192"};
+constexpr std::array<int32_t, 4> kStaticShadowResSizes = {1024, 2048, 4096, 8192};
 
 // Draw distance: one multiplier applied to both the world detail cull and
 // the character LOD switch ranges (paired hot cvars in the app layer).
-constexpr std::array<const char*, 4> kDrawDistanceLabels = {"Original", "2x",
-                                                           "3x", "5x"};
+constexpr std::array<const char*, 4> kDrawDistanceLabels = {"Original", "2x", "3x", "5x"};
 constexpr std::array<double, 4> kDrawDistanceScales = {1.0, 2.0, 3.0, 5.0};
 
 // World streaming: pre-load radius in metres for neighbouring world cells
 // (0 = the game's own cell-boundary streaming).
-constexpr std::array<const char*, 4> kStreamProbeLabels = {
-    "Original", "Near (100 m)", "Extended (200 m)", "Far (300 m)"};
+constexpr std::array<const char*, 4> kStreamProbeLabels = {"Original", "Near (100 m)",
+                                                           "Extended (200 m)", "Far (300 m)"};
 constexpr std::array<double, 4> kStreamProbeRadii = {0.0, 100.0, 200.0, 300.0};
 
 // Audio device buffer sizes in sample frames (0 = backend default).
-constexpr std::array<const char*, 4> kAudioBufferLabels = {
-    "Auto", "512 (low latency)", "1024", "2048 (most stable)"};
+constexpr std::array<const char*, 4> kAudioBufferLabels = {"Auto", "512 (low latency)", "1024",
+                                                           "2048 (most stable)"};
 constexpr std::array<int32_t, 4> kAudioBufferFrames = {0, 512, 1024, 2048};
 
 // Xbox 360 XLanguage ids 1..12 (user_language cvar).
-constexpr std::array<const char*, 12> kLanguageLabels = {
-    "English",    "Japanese",           "German",     "French",
-    "Spanish",    "Italian",            "Korean",     "Traditional Chinese",
-    "Portuguese", "Simplified Chinese", "Polish",     "Russian"};
+constexpr std::array<const char*, 12> kLanguageLabels = {"English",    "Japanese",
+                                                         "German",     "French",
+                                                         "Spanish",    "Italian",
+                                                         "Korean",     "Traditional Chinese",
+                                                         "Portuguese", "Simplified Chinese",
+                                                         "Polish",     "Russian"};
 
 // Settings-menu controller chord presets (menu_chord cvar spec strings).
 // First entry matches the cvar default (the chord reset target).
@@ -286,8 +278,8 @@ int ResolutionIndexFromScale(int32_t scale) {
   int best = 0;
   int32_t best_delta = 1000;
   for (int i = 0; i < static_cast<int>(kResolutionScales.size()); ++i) {
-    int32_t delta = kResolutionScales[i] > scale ? kResolutionScales[i] - scale
-                                                 : scale - kResolutionScales[i];
+    int32_t delta =
+        kResolutionScales[i] > scale ? kResolutionScales[i] - scale : scale - kResolutionScales[i];
     if (delta < best_delta) {
       best = i;
       best_delta = delta;
@@ -330,7 +322,9 @@ bool FrameCapHasAuto() {
   return UseGuestFrameCap() && HasCvar("skate3_guest_fps_cap_auto");
 }
 
-int FrameCapRateBaseIndex() { return FrameCapHasAuto() ? 1 : 0; }
+int FrameCapRateBaseIndex() {
+  return FrameCapHasAuto() ? 1 : 0;
+}
 
 int FrameCapUnlimitedIndex() {
   return FrameCapRateBaseIndex() + static_cast<int>(kFrameCapRates.size());
@@ -377,7 +371,9 @@ float FieldOfViewFromCvar() {
   return float(std::clamp(rex::cvar::Query<double>("skate3_field_of_view"), 40.0, 120.0));
 }
 
-bool HasMsaaCvar() { return HasCvar("skate3_native_render_scene_msaa"); }
+bool HasMsaaCvar() {
+  return HasCvar("skate3_native_render_scene_msaa");
+}
 
 int MsaaIndexFromSamples(int32_t samples) {
   int best = 0;
@@ -450,8 +446,7 @@ int StaticShadowResIndexFromCvar() {
 }
 
 bool HasDrawDistanceCvars() {
-  return HasCvar("skate3_draw_distance_scale") &&
-         HasCvar("skate3_lod_distance_scale");
+  return HasCvar("skate3_draw_distance_scale") && HasCvar("skate3_lod_distance_scale");
 }
 
 template <size_t N>
@@ -480,9 +475,8 @@ int StreamProbeIndexFromCvar() {
   if (!HasCvar("skate3_draw_distance_stream_probe")) {
     return 0;
   }
-  return NearestValueIndex(
-      kStreamProbeRadii,
-      rex::cvar::Query<double>("skate3_draw_distance_stream_probe"));
+  return NearestValueIndex(kStreamProbeRadii,
+                           rex::cvar::Query<double>("skate3_draw_distance_stream_probe"));
 }
 
 // The native/emulated renderer choice only means anything while the native
@@ -860,8 +854,8 @@ void AddTextCenteredCap(ImDrawList* dl, ImFont* font, float size, ImVec2 center,
   dl->AddText(font, size, ImVec2(Snap(x), std::ceil(y - 0.5f)), col, text);
 }
 
-void AddTextVCentered(ImDrawList* dl, ImFont* font, float size, float x, float center_y,
-                      ImU32 col, const char* text) {
+void AddTextVCentered(ImDrawList* dl, ImFont* font, float size, float x, float center_y, ImU32 col,
+                      const char* text) {
   ImVec2 extent = font->CalcTextSizeA(size, FLT_MAX, 0.0f, text);
   dl->AddText(font, size, ImVec2(Snap(x), Snap(center_y - extent.y * 0.5f)), col, text);
 }
@@ -946,8 +940,8 @@ void DrawHardRingBand(ImDrawList* dl, ImVec2 p_min, ImVec2 p_max, float e0, floa
   const float x1 = Snap(p_max.x), y1 = Snap(p_max.y);
   const float rr = Snap(corner_r);
   const float o0 = Snap(e0), o1 = Snap(e1);
-  const float a0 = x0 + rr, a1 = x1 - rr;  // straight-run x span
-  const float b0 = y0 + rr, b1 = y1 - rr;  // straight-run y span
+  const float a0 = x0 + rr, a1 = x1 - rr;                            // straight-run x span
+  const float b0 = y0 + rr, b1 = y1 - rr;                            // straight-run y span
   dl->AddRectFilled(ImVec2(a0, y0 - o1), ImVec2(a1, y0 - o0), col);  // top
   dl->AddRectFilled(ImVec2(a0, y1 + o0), ImVec2(a1, y1 + o1), col);  // bottom
   dl->AddRectFilled(ImVec2(x0 - o1, b0), ImVec2(x0 - o0, b1), col);  // left
@@ -1183,7 +1177,7 @@ struct SimpleSettingsDialog::RowSpec {
   Kind kind = kEnum;
   const char* label = nullptr;
   const char* desc = nullptr;
-  std::string desc_extra;       // dynamic addendum shown under desc
+  std::string desc_extra;            // dynamic addendum shown under desc
   const char* value_note = nullptr;  // short warning shown in the description
   bool enabled = true;
   bool danger = false;
@@ -1283,9 +1277,8 @@ void SimpleSettingsDialog::LoadSettingsFromCvars() {
       HasCvar("skate3_native_render_scene") && rex::cvar::Query<bool>("skate3_native_render_scene");
   ssao_ = HasCvar("skate3_native_render_scene_ssao") &&
           rex::cvar::Query<bool>("skate3_native_render_scene_ssao");
-  static_shadows_ =
-      HasCvar("skate3_native_render_scene_shadow_static_casters") &&
-      rex::cvar::Query<bool>("skate3_native_render_scene_shadow_static_casters");
+  static_shadows_ = HasCvar("skate3_native_render_scene_shadow_static_casters") &&
+                    rex::cvar::Query<bool>("skate3_native_render_scene_shadow_static_casters");
   shadow_pcss_ = HasCvar("skate3_native_render_scene_shadow_pcss") &&
                  rex::cvar::Query<bool>("skate3_native_render_scene_shadow_pcss");
   bloom_ = HasCvar("skate3_native_render_scene_bloom") &&
@@ -1320,15 +1313,13 @@ bool SimpleSettingsDialog::HasSettingsChanges() const {
           (aspect_ratio_index_ != 0) != rex::cvar::Query<bool>("skate3_ultrawide")) ||
          (HasMsaaCvar() && msaa_index_ != MsaaIndexFromCvar()) ||
          (HasShadowQualityCvars() && shadow_quality_index_ != ShadowQualityIndexFromCvar()) ||
-         (HasStaticShadowCvars() &&
-          static_shadow_res_index_ != StaticShadowResIndexFromCvar()) ||
+         (HasStaticShadowCvars() && static_shadow_res_index_ != StaticShadowResIndexFromCvar()) ||
          (HasCvar("monitor") && monitor_index_ != MonitorIndexFromCvar()) ||
          (HasCvar("audio_device_sample_frames") &&
           audio_buffer_index_ != AudioBufferIndexFromCvar()) ||
          (HasCvar("user_language") && language_index_ != LanguageIndexFromCvar()) ||
          fullscreen_ != rex::cvar::Query<bool>("fullscreen") ||
-         vsync_ != rex::cvar::Query<bool>("vsync") ||
-         tearing_ != TearingFromCvar() ||
+         vsync_ != rex::cvar::Query<bool>("vsync") || tearing_ != TearingFromCvar() ||
          mnk_mode_ != rex::cvar::Query<bool>("mnk_mode") ||
          mnk_capture_mouse_ != rex::cvar::Query<bool>("mnk_capture_mouse");
 }
@@ -1391,8 +1382,8 @@ void SimpleSettingsDialog::SaveVideo() {
   graphics_api_index_ = std::clamp(graphics_api_index_, 0, 1);
   ApplyGraphicsApi(graphics_api_index_);
   if (!device_list_.device_names.empty() && HasCvar(device_list_.cvar_name)) {
-    device_index_ = std::clamp(device_index_, 0,
-                               static_cast<int>(device_list_.device_names.size()) - 1);
+    device_index_ =
+        std::clamp(device_index_, 0, static_cast<int>(device_list_.device_names.size()) - 1);
     ApplyGraphicsDevice(device_list_, device_index_);
   }
   ApplyRenderScale(resolution_scale_index_);
@@ -1412,9 +1403,8 @@ void SimpleSettingsDialog::SaveVideo() {
     ApplyShadowQuality(shadow_quality_index_);
   }
   if (HasStaticShadowCvars()) {
-    static_shadow_res_index_ = std::clamp(
-        static_shadow_res_index_, 0,
-        static_cast<int>(kStaticShadowResSizes.size()) - 1);
+    static_shadow_res_index_ =
+        std::clamp(static_shadow_res_index_, 0, static_cast<int>(kStaticShadowResSizes.size()) - 1);
     ApplyStaticShadowRes(static_shadow_res_index_);
   }
   if (HasCvar("monitor")) {
@@ -1427,8 +1417,7 @@ void SimpleSettingsDialog::SaveVideo() {
     ApplyAudioBuffer(audio_buffer_index_);
   }
   if (HasCvar("user_language")) {
-    language_index_ =
-        std::clamp(language_index_, 0, static_cast<int>(kLanguageLabels.size()) - 1);
+    language_index_ = std::clamp(language_index_, 0, static_cast<int>(kLanguageLabels.size()) - 1);
     ApplyLanguage(language_index_);
   }
   SetBoolCvar("vsync", vsync_);
@@ -1503,9 +1492,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
           row.options.push_back(std::to_string(i) + ": " + device_list_.device_names[i]);
         }
         row.index = &device_index_;
-        row.reset = [this] {
-          device_index_ = std::max(device_list_.active_index, 0);
-        };
+        row.reset = [this] { device_index_ = std::max(device_list_.active_index, 0); };
         rows.push_back(std::move(row));
       }
       {
@@ -1539,8 +1526,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &resolution_scale_index_;
         row.reset = [this] {
-          resolution_scale_index_ = ResolutionIndexFromScale(
-              int32_t(CvarDefaultDouble("resolution_scale", 3.0)));
+          resolution_scale_index_ =
+              ResolutionIndexFromScale(int32_t(CvarDefaultDouble("resolution_scale", 3.0)));
         };
         rows.push_back(std::move(row));
       }
@@ -1556,8 +1543,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.options = FrameCapOptionLabels();
         row.index = &frame_cap_index_;
         row.reset = [this] {
-          if (FrameCapHasAuto() &&
-              CvarDefaultBool("skate3_guest_fps_cap_auto", false)) {
+          if (FrameCapHasAuto() && CvarDefaultBool("skate3_guest_fps_cap_auto", false)) {
             frame_cap_index_ = 0;
             return;
           }
@@ -1607,9 +1593,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
           row.options.push_back(label);
         }
         row.index = &monitor_index_;
-        row.reset = [this] {
-          monitor_index_ = int(CvarDefaultDouble("monitor", 0.0));
-        };
+        row.reset = [this] { monitor_index_ = int(CvarDefaultDouble("monitor", 0.0)); };
         rows.push_back(std::move(row));
       }
       {
@@ -1673,8 +1657,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &msaa_index_;
         row.reset = [this] {
-          msaa_index_ =
-              MsaaIndexFromSamples(int32_t(CvarDefaultDouble("skate3_native_render_scene_msaa", 4.0)));
+          msaa_index_ = MsaaIndexFromSamples(
+              int32_t(CvarDefaultDouble("skate3_native_render_scene_msaa", 4.0)));
         };
         rows.push_back(std::move(row));
       }
@@ -1693,11 +1677,10 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
             // shadow_tile cvar), so the label follows the Render Scale
             // row's STAGED selection: both apply on restart, and changing
             // the scale updates what Auto reads as immediately.
-            const int scale_index = std::clamp(
-                resolution_scale_index_, 0,
-                static_cast<int>(kResolutionScales.size()) - 1);
-            const uint32_t auto_tile = std::min(
-                512u * uint32_t(kResolutionScales[scale_index]), 4096u);
+            const int scale_index = std::clamp(resolution_scale_index_, 0,
+                                               static_cast<int>(kResolutionScales.size()) - 1);
+            const uint32_t auto_tile =
+                std::min(512u * uint32_t(kResolutionScales[scale_index]), 4096u);
             row.options.push_back("Auto (" + std::to_string(auto_tile) + ")");
           } else {
             row.options.push_back(kShadowQualityLabels[i]);
@@ -1723,15 +1706,13 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.options = {"Off", "On"};
         row.flag = &static_shadows_;
         row.on_enum_change = [this](int value) {
-          SetBoolCvar("skate3_native_render_scene_shadow_static_casters",
-                      value != 0);
+          SetBoolCvar("skate3_native_render_scene_shadow_static_casters", value != 0);
           SaveSimpleSettingsConfig(config_path_);
         };
         row.reset = [this] {
-          static_shadows_ = CvarDefaultBool(
-              "skate3_native_render_scene_shadow_static_casters", true);
-          SetBoolCvar("skate3_native_render_scene_shadow_static_casters",
-                      static_shadows_);
+          static_shadows_ =
+              CvarDefaultBool("skate3_native_render_scene_shadow_static_casters", true);
+          SetBoolCvar("skate3_native_render_scene_shadow_static_casters", static_shadows_);
           SaveSimpleSettingsConfig(config_path_);
         };
         rows.push_back(std::move(row));
@@ -1749,9 +1730,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &static_shadow_res_index_;
         row.reset = [this] {
-          static_shadow_res_index_ = StaticShadowResIndexFrom(int32_t(
-              CvarDefaultDouble("skate3_native_render_scene_shadow_static_size",
-                                4096.0)));
+          static_shadow_res_index_ = StaticShadowResIndexFrom(
+              int32_t(CvarDefaultDouble("skate3_native_render_scene_shadow_static_size", 4096.0)));
         };
         rows.push_back(std::move(row));
       }
@@ -1772,8 +1752,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
           SaveSimpleSettingsConfig(config_path_);
         };
         row.reset = [this] {
-          shadow_pcss_ =
-              CvarDefaultBool("skate3_native_render_scene_shadow_pcss", true);
+          shadow_pcss_ = CvarDefaultBool("skate3_native_render_scene_shadow_pcss", true);
           SetBoolCvar("skate3_native_render_scene_shadow_pcss", shadow_pcss_);
           SaveSimpleSettingsConfig(config_path_);
         };
@@ -1842,9 +1821,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
           SaveSimpleSettingsConfig(config_path_);
         };
         row.reset = [this] {
-          volumetrics_ =
-              CvarDefaultBool("skate3_native_render_scene_shafts", true) ||
-              CvarDefaultBool("skate3_native_render_scene_haze", true);
+          volumetrics_ = CvarDefaultBool("skate3_native_render_scene_shafts", true) ||
+                         CvarDefaultBool("skate3_native_render_scene_haze", true);
           if (HasCvar("skate3_native_render_scene_shafts")) {
             SetBoolCvar("skate3_native_render_scene_shafts", volumetrics_);
           }
@@ -1869,8 +1847,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &draw_distance_index_;
         row.on_enum_change = [this](int value) {
-          value = std::clamp(value, 0,
-                             static_cast<int>(kDrawDistanceScales.size()) - 1);
+          value = std::clamp(value, 0, static_cast<int>(kDrawDistanceScales.size()) - 1);
           const std::string scale = std::to_string(kDrawDistanceScales[value]);
           rex::cvar::SetFlagByName("skate3_draw_distance_scale", scale);
           rex::cvar::SetFlagByName("skate3_lod_distance_scale", scale);
@@ -1878,10 +1855,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         };
         row.reset = [this] {
           draw_distance_index_ = NearestValueIndex(
-              kDrawDistanceScales,
-              CvarDefaultDouble("skate3_draw_distance_scale", 2.0));
-          const std::string scale =
-              std::to_string(kDrawDistanceScales[draw_distance_index_]);
+              kDrawDistanceScales, CvarDefaultDouble("skate3_draw_distance_scale", 2.0));
+          const std::string scale = std::to_string(kDrawDistanceScales[draw_distance_index_]);
           rex::cvar::SetFlagByName("skate3_draw_distance_scale", scale);
           rex::cvar::SetFlagByName("skate3_lod_distance_scale", scale);
           SaveSimpleSettingsConfig(config_path_);
@@ -1902,19 +1877,16 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &stream_probe_index_;
         row.on_enum_change = [this](int value) {
-          value = std::clamp(value, 0,
-                             static_cast<int>(kStreamProbeRadii.size()) - 1);
+          value = std::clamp(value, 0, static_cast<int>(kStreamProbeRadii.size()) - 1);
           rex::cvar::SetFlagByName("skate3_draw_distance_stream_probe",
                                    std::to_string(kStreamProbeRadii[value]));
           SaveSimpleSettingsConfig(config_path_);
         };
         row.reset = [this] {
           stream_probe_index_ = NearestValueIndex(
-              kStreamProbeRadii,
-              CvarDefaultDouble("skate3_draw_distance_stream_probe", 0.0));
-          rex::cvar::SetFlagByName(
-              "skate3_draw_distance_stream_probe",
-              std::to_string(kStreamProbeRadii[stream_probe_index_]));
+              kStreamProbeRadii, CvarDefaultDouble("skate3_draw_distance_stream_probe", 0.0));
+          rex::cvar::SetFlagByName("skate3_draw_distance_stream_probe",
+                                   std::to_string(kStreamProbeRadii[stream_probe_index_]));
           SaveSimpleSettingsConfig(config_path_);
         };
         rows.push_back(std::move(row));
@@ -2006,9 +1978,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
             "active.";
         row.options = {"Off", "On"};
         row.flag = &mnk_capture_mouse_;
-        row.reset = [this] {
-          mnk_capture_mouse_ = CvarDefaultBool("mnk_capture_mouse", true);
-        };
+        row.reset = [this] { mnk_capture_mouse_ = CvarDefaultBool("mnk_capture_mouse", true); };
         rows.push_back(std::move(row));
       }
       if (HasCvar("mnk_sensitivity")) {
@@ -2141,9 +2111,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
             // The backend publishes the buffer it chose when running in auto
             // mode; 0 while unknown (explicit size active, or no device yet).
             const int32_t auto_frames = rex::audio::AutoDeviceSampleFrames();
-            row.options.push_back(auto_frames > 0
-                                      ? "Auto (" + std::to_string(auto_frames) + ")"
-                                      : std::string("Auto"));
+            row.options.push_back(auto_frames > 0 ? "Auto (" + std::to_string(auto_frames) + ")"
+                                                  : std::string("Auto"));
           } else {
             row.options.push_back(kAudioBufferLabels[i]);
           }
@@ -2170,8 +2139,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.index = &profiles_.selected_index;
         row.on_enum_change = [this](int index) {
           index = std::clamp(index, 0, static_cast<int>(profiles_.profiles.size()) - 1);
-          CopyToBuffer(gamertag_buf_, sizeof(gamertag_buf_),
-                       profiles_.profiles[index].gamertag);
+          CopyToBuffer(gamertag_buf_, sizeof(gamertag_buf_), profiles_.profiles[index].gamertag);
           profile_signed_in_ = profiles_.profiles[index].signed_in;
         };
         rows.push_back(std::move(row));
@@ -2217,10 +2185,9 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         }
         row.index = &language_index_;
         row.reset = [this] {
-          language_index_ =
-              std::clamp(int(CvarDefaultDouble("user_language", 1.0)), 1,
-                         static_cast<int>(kLanguageLabels.size())) -
-              1;
+          language_index_ = std::clamp(int(CvarDefaultDouble("user_language", 1.0)), 1,
+                                       static_cast<int>(kLanguageLabels.size())) -
+                            1;
         };
         rows.push_back(std::move(row));
       }
@@ -2229,9 +2196,8 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         RowSpec row;
         row.kind = RowSpec::kAction;
         row.label = "Apply & Restart";
-        row.desc = pending
-                       ? "Save the pending changes and restart the game to apply them."
-                       : "No pending changes. Adjust a setting first, then apply it here.";
+        row.desc = pending ? "Save the pending changes and restart the game to apply them."
+                           : "No pending changes. Adjust a setting first, then apply it here.";
         row.enabled = pending;
         row.action = [this] { ApplyAndRestart(); };
         rows.push_back(std::move(row));
@@ -2659,8 +2625,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   // The column widths are capped, so on wide displays the block would hug the
   // left margin - center the whole menu instead.
   const float menu_total_w = rail_w + content_w + desc_w + 2.0f * col_gap;
-  const float rail_x =
-      Snap(frame_pos.x + std::max(margin_x, (frame_size.x - menu_total_w) * 0.5f));
+  const float rail_x = Snap(frame_pos.x + std::max(margin_x, (frame_size.x - menu_total_w) * 0.5f));
   const float content_x = rail_x + rail_w + col_gap;
   const float desc_x = content_x + content_w + col_gap;
   const float menu_right = desc_x + desc_w;
@@ -2682,17 +2647,17 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   // (title at 13% of the frame) so the slot count keeps its tuned value...
   const float row_pitch = row_h + row_gap;
   const float columns_y_flow = Snap(Snap(frame_pos.y + frame_size.y * 0.13f) + 74.0f * s);
-  const int view_rows = std::clamp(
-      static_cast<int>((content_bottom - columns_y_flow + row_gap) / row_pitch) - 1, 1,
-      kMaxViewRows);
+  const int view_rows =
+      std::clamp(static_cast<int>((content_bottom - columns_y_flow + row_gap) / row_pitch) - 1, 1,
+                 kMaxViewRows);
   const float content_view_h = view_rows * row_pitch - row_gap;
   // ...but the block itself is re-anchored so those slots sit vertically
   // CENTERED in the frame (the flow layout read visibly low). The title rides
   // 74*s above the block, the footer stays put; clamps keep the title
   // on-screen and the block clear of the footer.
-  const float columns_y = Snap(std::clamp(
-      frame_pos.y + (frame_size.y - content_view_h) * 0.5f,
-      std::min(frame_pos.y + 98.0f * s, columns_y_flow), content_bottom - content_view_h));
+  const float columns_y = Snap(std::clamp(frame_pos.y + (frame_size.y - content_view_h) * 0.5f,
+                                          std::min(frame_pos.y + 98.0f * s, columns_y_flow),
+                                          content_bottom - content_view_h));
   const float title_y = Snap(columns_y - 74.0f * s);
   const float content_view_bottom = columns_y + content_view_h;
   // Description panel height - also anchors Close Game's bottom edge. When
@@ -2700,12 +2665,10 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   // tuned 320*s height, the panel stretches so its bottom stays level with
   // the button's (the two columns read as one aligned baseline).
   const float rail_close_bottom =
-      Snap(columns_y + category_count * (rail_item_h + row_gap) - row_gap +
-           45.0f * s) +
+      Snap(columns_y + category_count * (rail_item_h + row_gap) - row_gap + 45.0f * s) +
       rail_item_h;
-  const float desc_panel_h = Snap(std::min(
-      content_bottom - columns_y,
-      std::max(320.0f * s, rail_close_bottom - columns_y)));
+  const float desc_panel_h = Snap(
+      std::min(content_bottom - columns_y, std::max(320.0f * s, rail_close_bottom - columns_y)));
 
   const ImVec2 mouse = io.MousePos;
   const bool mouse_moved =
@@ -2750,8 +2713,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     float chip_x0 = Snap(chip_x1 - extent.x - 2.0f * chip_pad);
     float chip_y0 = Snap(title_y + title_size * 0.5f - extent.y * 0.5f - 6.0f * s);
     float chip_y1 = Snap(chip_y0 + extent.y + 12.0f * s);
-    dl->AddRect(ImVec2(chip_x0, chip_y0), ImVec2(chip_x1, chip_y1), kColWarn, 0.0f, 0,
-                1.5f);
+    dl->AddRect(ImVec2(chip_x0, chip_y0), ImVec2(chip_x1, chip_y1), kColWarn, 0.0f, 0, 1.5f);
     dl->AddText(bold, chip_size, ImVec2(Snap(chip_x0 + chip_pad), Snap(chip_y0 + 6.0f * s)),
                 kColWarn, chip_text);
   }
@@ -2784,9 +2746,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     bool rail_focused = zone_ == FocusZone::kRail && rail_sel_ == i;
     bool fill_arrived = rail_anim_y_ >= 0.0f && std::abs(rail_anim_y_ - y0) < 0.5f;
     if (!(rail_focused && fill_arrived)) {
-      ImU32 bg = (is_current && !rail_focused)
-                     ? kColSelFill
-                     : (hovered ? kColRailPanelHover : kColRailPanel);
+      ImU32 bg = (is_current && !rail_focused) ? kColSelFill
+                                               : (hovered ? kColRailPanelHover : kColRailPanel);
       dl->AddRectFilled(ImVec2(rail_x, y0), ImVec2(rail_x + rail_w, y1), bg, 0.0f);
       dl->AddRect(ImVec2(rail_x, y0), ImVec2(rail_x + rail_w, y1), kColRailBorder, 0.0f);
     }
@@ -2802,8 +2763,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
       rail_anim_y_ = rail_focus_target;  // settle exactly so arrival tests are crisp
     }
     const float fill_y = Snap(rail_anim_y_);
-    DrawFocusHighlight(dl, ImVec2(rail_x, fill_y),
-                       ImVec2(rail_x + rail_w, fill_y + rail_item_h), s);
+    DrawFocusHighlight(dl, ImVec2(rail_x, fill_y), ImVec2(rail_x + rail_w, fill_y + rail_item_h),
+                       s);
   } else {
     rail_anim_y_ = -1.0f;
   }
@@ -2815,8 +2776,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     bool focused = is_current && zone_ == FocusZone::kRail && rail_sel_ == i &&
                    rail_anim_y_ >= 0.0f && std::abs(rail_anim_y_ - y0) < rail_item_h * 0.5f;
     ImU32 text_col = focused ? kColSelText : (is_current ? kColText : kColTextDim);
-    AddTextVCentered(dl, bold, label_size, rail_x + 20.0f * s,
-                     y0 + rail_item_h * 0.5f, text_col, kCategories[i].name);
+    AddTextVCentered(dl, bold, label_size, rail_x + 20.0f * s, y0 + rail_item_h * 0.5f, text_col,
+                     kCategories[i].name);
     if (is_current && zone_ == FocusZone::kContent) {
       // Arrow hinting that focus lives in the content column.
       float ax = rail_x + rail_w - 18.0f * s;
@@ -2832,8 +2793,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     // never closer to the last category than the 45*s gap the 4-category
     // layout had - with more categories the rail wins and pushes it down.
     const float rail_bottom = columns_y + category_count * (rail_item_h + row_gap) - row_gap;
-    float y0 = Snap(std::max(columns_y + desc_panel_h - rail_item_h,
-                             rail_bottom + 45.0f * s));
+    float y0 = Snap(std::max(columns_y + desc_panel_h - rail_item_h, rail_bottom + 45.0f * s));
     float y1 = y0 + rail_item_h;
     bool focused = zone_ == FocusZone::kRail && rail_sel_ == quit_rail_index;
     bool hovered = mouse_in(rail_x, y0, rail_x + rail_w, y1);
@@ -2910,8 +2870,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   // fully OUTSIDE the focused row without being cut off at the edges.
   const float ring_pad = 6.0f * s;
   dl->PushClipRect(ImVec2(content_x - ring_pad, columns_y - ring_pad),
-                   ImVec2(content_x + content_w + ring_pad + 1.0f,
-                          content_view_bottom + ring_pad),
+                   ImVec2(content_x + content_w + ring_pad + 1.0f, content_view_bottom + ring_pad),
                    true);
 
   // Sliding selection highlight (white fill under the focused row).
@@ -2962,14 +2921,12 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     // so its square corners don't poke past the radius - but only once the
     // sliding fill has ARRIVED. Skipping the moment row_index_ changes
     // blanked the target row out from under the still-traveling animation.
-    if (content_focus && row_index_ == i &&
-        std::abs(highlight_anim_y_ - row_y[i]) < 0.5f) {
+    if (content_focus && row_index_ == i && std::abs(highlight_anim_y_ - row_y[i]) < 0.5f) {
       continue;
     }
     ImU32 bg = hovered && row.enabled ? kColPanelHover : kColPanel;
     dl->AddRectFilled(ImVec2(content_x, y0), ImVec2(content_x + content_w, y1), bg, 0.0f);
-    dl->AddRect(ImVec2(content_x, y0), ImVec2(content_x + content_w, y1), kColPanelBorder,
-                0.0f);
+    dl->AddRect(ImVec2(content_x, y0), ImVec2(content_x + content_w, y1), kColPanelBorder, 0.0f);
   }
 
   auto draw_row_content = [&](int i) {
@@ -2984,8 +2941,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     if (row.kind == RowSpec::kHeader) {
       // Section header: solid accent bar spanning the content
       // column, dark bold text, label column-aligned with the row labels.
-      dl->AddRectFilled(ImVec2(content_x, y0), ImVec2(content_x + content_w, y1), kColAccent,
-                        0.0f);
+      dl->AddRectFilled(ImVec2(content_x, y0), ImVec2(content_x + content_w, y1), kColAccent, 0.0f);
       AddTextVCentered(dl, bold_ol, label_size, content_x + 18.0f * s, cy, kColAccentDark,
                        row.label);
       return;
@@ -2998,9 +2954,9 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
                          std::abs(highlight_anim_y_ - row_y[i]) < row_hgt[i] * 0.5f;
     const bool hovered = mouse_in(content_x, y0, content_x + content_w, y1);
     ImFont* row_bold = focused ? bold : bold_ol;  // polarity-matched weight
-    ImU32 label_col = focused ? kColSelText
-                              : (!row.enabled ? kColTextFaint
-                                              : (row.danger ? kColDanger : kColRowText));
+    ImU32 label_col =
+        focused ? kColSelText
+                : (!row.enabled ? kColTextFaint : (row.danger ? kColDanger : kColRowText));
     ImU32 value_col = focused ? kColSelText : (row.enabled ? kColRowText : kColTextFaint);
 
     // Label.
@@ -3023,26 +2979,21 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
         // Hit areas are tracked separately from enablement: a click on a
         // greyed-out stepper must be swallowed, not fall through to the
         // row-body wrap-around cycle below.
-        const bool left_hit =
-            mouse_in(left_center.x - chevron_r - 4.0f, cy - chevron_r - 4.0f,
-                     left_center.x + chevron_r + 4.0f, cy + chevron_r + 4.0f);
-        const bool right_hit =
-            mouse_in(right_center.x - chevron_r - 4.0f, cy - chevron_r - 4.0f,
-                     right_center.x + chevron_r + 4.0f, cy + chevron_r + 4.0f);
+        const bool left_hit = mouse_in(left_center.x - chevron_r - 4.0f, cy - chevron_r - 4.0f,
+                                       left_center.x + chevron_r + 4.0f, cy + chevron_r + 4.0f);
+        const bool right_hit = mouse_in(right_center.x - chevron_r - 4.0f, cy - chevron_r - 4.0f,
+                                        right_center.x + chevron_r + 4.0f, cy + chevron_r + 4.0f);
         bool left_hover = can_left && left_hit;
         bool right_hover = can_right && right_hit;
         const ImU32 chev_disabled = focused ? kColChevDisabledOnDark : kColChevDisabled;
         DrawChevron(dl, left_center, chevron_r, true,
-                    can_left ? (left_hover ? kColInteractHover : kColInteract)
-                             : chev_disabled,
+                    can_left ? (left_hover ? kColInteractHover : kColInteract) : chev_disabled,
                     kColWhite, true);
         DrawChevron(dl, right_center, chevron_r, false,
-                    can_right ? (right_hover ? kColInteractHover : kColInteract)
-                              : chev_disabled,
+                    can_right ? (right_hover ? kColInteractHover : kColInteract) : chev_disabled,
                     kColWhite, true);
         if (count > 0) {
-          float text_max_w = (right_center.x - chevron_r) - (left_center.x + chevron_r) -
-                             16.0f * s;
+          float text_max_w = (right_center.x - chevron_r) - (left_center.x + chevron_r) - 16.0f * s;
           // Free-form values (GPU adapter names) can outgrow the slot: step
           // the value text down toward 18 design px first (each candidate
           // em-quantized like every other size), only then ellipsize.
@@ -3054,8 +3005,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
                design -= 1.0f) {
             fit_size = font_px(design * s);
           }
-          std::string text =
-              TruncateToWidth(row_bold, fit_size, text_max_w, row.options[value]);
+          std::string text = TruncateToWidth(row_bold, fit_size, text_max_w, row.options[value]);
           AddTextCentered(dl, row_bold, fit_size,
                           ImVec2((left_center.x + right_center.x) * 0.5f, cy), value_col,
                           text.c_str());
@@ -3096,11 +3046,10 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
         ImGui::SetCursorScreenPos(ImVec2(track_x0 - 10.0f * s, cy - 14.0f * s));
         char slider_id[48];
         std::snprintf(slider_id, sizeof(slider_id), "##slider_%d_%d", category_, i);
-        ImGui::InvisibleButton(slider_id,
-                               ImVec2(track_x1 - track_x0 + 20.0f * s, 28.0f * s));
+        ImGui::InvisibleButton(slider_id, ImVec2(track_x1 - track_x0 + 20.0f * s, 28.0f * s));
         if (ImGui::IsItemActive() && row.enabled) {
-          float nt = std::clamp((mouse.x - track_x0) / std::max(1.0f, track_x1 - track_x0),
-                                0.0f, 1.0f);
+          float nt =
+              std::clamp((mouse.x - track_x0) / std::max(1.0f, track_x1 - track_x0), 0.0f, 1.0f);
           float new_value = row.min + nt * (row.max - row.min);
           // Quantize to step for tidy values.
           new_value = row.min + std::round((new_value - row.min) / row.step) * row.step;
@@ -3138,17 +3087,15 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
           ImGui::PushFont(font, value_size / std::max(0.01f, ImGui::GetStyle().FontScaleDpi));
           // Edit field sits on the BLACK focused row: light text, light frame.
           ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(1, 1, 1, 0.15f));
-          ImGui::PushStyleColor(ImGuiCol_Text,
-                                ImVec4(0.98f, 0.99f, 0.99f, 1.0f));
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.98f, 0.99f, 0.99f, 1.0f));
           if (text_edit_focus_pending_) {
             ImGui::SetKeyboardFocusHere();
             text_edit_focus_pending_ = false;
           }
-          bool committed = ImGui::InputText("##settings_text_edit", row.text_buf,
-                                            row.text_buf_size,
+          bool committed = ImGui::InputText("##settings_text_edit", row.text_buf, row.text_buf_size,
                                             ImGuiInputTextFlags_EnterReturnsTrue);
-          if (committed || (!ImGui::IsItemActive() && !text_edit_focus_pending_ &&
-                            ImGui::IsItemDeactivated())) {
+          if (committed ||
+              (!ImGui::IsItemActive() && !text_edit_focus_pending_ && ImGui::IsItemDeactivated())) {
             editing_text_ = false;
           }
           ImGui::PopStyleColor(2);
@@ -3156,8 +3103,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
         } else {
           const char* text = row.text_buf && row.text_buf[0] ? row.text_buf : "-";
           ImVec2 extent = row_bold->CalcTextSizeA(value_size, FLT_MAX, 0.0f, text);
-          dl->AddText(row_bold, value_size, ImVec2(Snap(vx1 - extent.x), Snap(cy - extent.y * 0.5f)),
-                      value_col, text);
+          dl->AddText(row_bold, value_size,
+                      ImVec2(Snap(vx1 - extent.x), Snap(cy - extent.y * 0.5f)), value_col, text);
           if (clicked && hovered && row.enabled) {
             zone_ = FocusZone::kContent;
             row_index_ = i;
@@ -3180,8 +3127,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   // Phase 2: the sliding highlight above neighbours...
   if (content_focus && highlight_anim_y_ >= 0.0f) {
     float y0 = columns_y + Snap(highlight_anim_y_) - scroll;
-    DrawFocusHighlight(dl, ImVec2(content_x, y0), ImVec2(content_x + content_w, y0 + row_h),
-                       s);
+    DrawFocusHighlight(dl, ImVec2(content_x, y0), ImVec2(content_x + content_w, y0 + row_h), s);
   }
   // ...phase 3: the focused row's own content above the highlight.
   if (content_focus && row_index_ >= 0 && row_index_ < static_cast<int>(rows.size())) {
@@ -3234,10 +3180,10 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     float text_x = Snap(desc_x + 14.0f * s);
     float text_y = Snap(columns_y + header_bar_h + 14.0f * s);
     float wrap_w = desc_w - 28.0f * s;
-    text_y = Snap(text_y +
-                  AddTextJustified(dl, font, desc_size, ImVec2(text_x, text_y), wrap_w,
-                                   kColText, desc_text) +
-                  10.0f * s);
+    text_y = Snap(
+        text_y +
+        AddTextJustified(dl, font, desc_size, ImVec2(text_x, text_y), wrap_w, kColText, desc_text) +
+        10.0f * s);
     if (extra_text) {
       text_y = Snap(text_y +
                     AddTextJustified(dl, font, desc_size, ImVec2(text_x, text_y), wrap_w,
@@ -3246,8 +3192,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
     }
     if (note_text) {
       text_y = Snap(text_y +
-                    AddTextJustified(dl, bold, desc_size, ImVec2(text_x, text_y), wrap_w,
-                                     kColWarn, note_text) +
+                    AddTextJustified(dl, bold, desc_size, ImVec2(text_x, text_y), wrap_w, kColWarn,
+                                     note_text) +
                     10.0f * s);
     }
     if (pending) {
@@ -3289,8 +3235,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
       if (glyph.circle) {
         float r = chip_h * 0.5f;
         dl->AddCircleFilled(ImVec2(x + r, cy), r, kColLegendChip, 28);
-        AddTextCenteredCap(dl, bold_ol, glyph_size, ImVec2(x + r, cy), kColLegendText,
-                           glyph.glyph, /*ink_x=*/true);
+        AddTextCenteredCap(dl, bold_ol, glyph_size, ImVec2(x + r, cy), kColLegendText, glyph.glyph,
+                           /*ink_x=*/true);
         x += 2.0f * r + 8.0f * fs;
       } else {
         float chip_w = Snap(glyph_extent.x + 18.0f * fs);
@@ -3298,8 +3244,8 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
         // (rounded AddRectFilled feathers every edge 1px).
         DrawHardRoundedFill(dl, ImVec2(x, legend_y), ImVec2(x + chip_w, legend_y + chip_h),
                             4.0f * fs, kColLegendChip);
-        AddTextCenteredCap(dl, bold_ol, glyph_size, ImVec2(x + chip_w * 0.5f, cy),
-                           kColLegendText, glyph.glyph, /*ink_x=*/false);
+        AddTextCenteredCap(dl, bold_ol, glyph_size, ImVec2(x + chip_w * 0.5f, cy), kColLegendText,
+                           glyph.glyph, /*ink_x=*/false);
         x += chip_w + 8.0f * fs;
       }
       ImVec2 label_extent = bold->CalcTextSizeA(label_text_size, FLT_MAX, 0.0f, glyph.label);

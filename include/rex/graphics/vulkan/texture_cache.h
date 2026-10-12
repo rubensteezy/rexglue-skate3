@@ -402,10 +402,8 @@ class VulkanTextureCache final : public TextureCache {
   std::array<VkPipeline, kLoadShaderCount> load_pipelines_scaled_storage_dest_{};
   std::array<bool, kLoadShaderCount> load_pipelines_scaled_storage_dest_attempted_{};
   VkPipeline GetLoadPipelineScaledStorageDest(LoadShaderIndex load_shader);
-  std::unique_ptr<ui::vulkan::SingleLayoutDescriptorSetPool>
-      load_dest_storage_descriptor_set_pool_;
-  std::unique_ptr<ui::vulkan::SingleLayoutDescriptorSetPool>
-      load_source_texel_descriptor_set_pool_;
+  std::unique_ptr<ui::vulkan::SingleLayoutDescriptorSetPool> load_dest_storage_descriptor_set_pool_;
+  std::unique_ptr<ui::vulkan::SingleLayoutDescriptorSetPool> load_source_texel_descriptor_set_pool_;
   struct LoadSourceTexelBinding {
     VkBufferView buffer_view;
     size_t descriptor_set_index;

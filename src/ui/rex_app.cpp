@@ -657,8 +657,8 @@ bool ReXApp::SetupPresentation() {
   config_.gpu_plugin = REXCVAR_GET(gpu_plugin);
   // Creates the first loadable candidate at or after `index`, leaving the
   // index on it; null once the list (or the plugin) is exhausted.
-  auto make_graphics = [this, &candidates](size_t& index)
-      -> std::unique_ptr<rex::system::IGraphicsSystem> {
+  auto make_graphics =
+      [this, &candidates](size_t& index) -> std::unique_ptr<rex::system::IGraphicsSystem> {
     if (config_.gpu_plugin.empty()) {
       return nullptr;
     }
@@ -698,8 +698,8 @@ bool ReXApp::SetupPresentation() {
       X_STATUS status = config_.graphics->SetupPresentation(&app_context());
       if (!XFAILED(status)) {
         if (stock_graphics && !candidates.empty()) {
-          REXLOG_INFO("Graphics backend: {} (gpu_backend={})",
-                      candidates[candidate_index].name, requested);
+          REXLOG_INFO("Graphics backend: {} (gpu_backend={})", candidates[candidate_index].name,
+                      requested);
         }
         break;
       }
@@ -807,20 +807,19 @@ void ReXApp::SetupOverlays(rex::ui::Presenter* presenter, rex::ui::ImmediateDraw
     // iterates by index and adjusts it on removal. The F2 bind above
     // already syncs the overlay itself before setting the cvar, so this
     // callback no-ops for that path.
-    rex::cvar::RegisterChangeCallback(
-        "show_fps_counter", [this, presenter](std::string_view, std::string_view) {
-          const bool want = REXCVAR_GET(show_fps_counter);
-          if (want == (fps_overlay_ != nullptr)) {
-            return;
-          }
-          if (want) {
-            fps_overlay_ = std::make_unique<ui::FpsOverlayDialog>(imgui_drawer_.get(), presenter);
-          } else {
-            fps_overlay_.reset();
-          }
-          presenter->SetGuestFrameStatsEnabled(fps_overlay_ != nullptr ||
-                                               debug_overlay_ != nullptr);
-        });
+    rex::cvar::RegisterChangeCallback("show_fps_counter", [this, presenter](std::string_view,
+                                                                            std::string_view) {
+      const bool want = REXCVAR_GET(show_fps_counter);
+      if (want == (fps_overlay_ != nullptr)) {
+        return;
+      }
+      if (want) {
+        fps_overlay_ = std::make_unique<ui::FpsOverlayDialog>(imgui_drawer_.get(), presenter);
+      } else {
+        fps_overlay_.reset();
+      }
+      presenter->SetGuestFrameStatsEnabled(fps_overlay_ != nullptr || debug_overlay_ != nullptr);
+    });
   }
   rex::ui::RegisterBind("bind_debug_overlay", "F3", "Toggle debug overlay", [this, presenter] {
     if (debug_overlay_) {
@@ -902,7 +901,7 @@ void ReXApp::LaunchModule() {
       if (title_id != 0) {
         REXLOG_INFO("Initializing shader storage for title {:08X}...", title_id);
         graphics_system->InitializeShaderStorage(runtime_->cache_root(), title_id,
-                                                kBlockShaderStorageStartup);
+                                                 kBlockShaderStorageStartup);
       }
     }
 

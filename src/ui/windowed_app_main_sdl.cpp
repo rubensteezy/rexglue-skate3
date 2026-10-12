@@ -53,16 +53,14 @@ void RequestWin32HighResolutionTimer() {
 
   // Xenia requests the maximum NT timer resolution directly rather than using
   // timeBeginPeriod(1), which is coarser and may override this setting in SDL.
-  using NtQueryTimerResolutionFn = LONG(NTAPI*)(PULONG minimum_resolution,
-                                                PULONG maximum_resolution,
-                                                PULONG current_resolution);
-  using NtSetTimerResolutionFn = LONG(NTAPI*)(ULONG desired_resolution,
-                                              BOOLEAN set_resolution,
-                                              PULONG current_resolution);
+  using NtQueryTimerResolutionFn =
+      LONG(NTAPI*)(PULONG minimum_resolution, PULONG maximum_resolution, PULONG current_resolution);
+  using NtSetTimerResolutionFn =
+      LONG(NTAPI*)(ULONG desired_resolution, BOOLEAN set_resolution, PULONG current_resolution);
   auto nt_query_timer_resolution = reinterpret_cast<NtQueryTimerResolutionFn>(
       GetProcAddress(ntdll_module, "NtQueryTimerResolution"));
-  auto nt_set_timer_resolution =
-      reinterpret_cast<NtSetTimerResolutionFn>(GetProcAddress(ntdll_module, "NtSetTimerResolution"));
+  auto nt_set_timer_resolution = reinterpret_cast<NtSetTimerResolutionFn>(
+      GetProcAddress(ntdll_module, "NtSetTimerResolution"));
   if (!nt_query_timer_resolution || !nt_set_timer_resolution) {
     return;
   }
@@ -89,7 +87,6 @@ void RequestWin32MMCSS() {
   FreeLibrary(dwmapi_module);
 }
 #endif
-
 
 int RunWindowedApp(int argc, char** argv) {
   auto remaining = rex::cvar::Init(argc, argv);

@@ -453,8 +453,7 @@ bool ShouldCollectDrawFingerprints();
 
 class ScopedCounterTimer {
  public:
-  explicit ScopedCounterTimer(CounterId counter_id,
-                              bool active = ShouldCollectDrawDiagnostics())
+  explicit ScopedCounterTimer(CounterId counter_id, bool active = ShouldCollectDrawDiagnostics())
       : counter_id_(counter_id), active_(active) {
     if (active_) {
       start_ = Clock::now();
@@ -464,9 +463,7 @@ class ScopedCounterTimer {
     }
   }
 
-  ~ScopedCounterTimer() {
-    Stop();
-  }
+  ~ScopedCounterTimer() { Stop(); }
 
   void Stop() {
     if (cpu_profile_start_ticks_) {
@@ -550,8 +547,7 @@ inline std::optional<std::filesystem::path> SaveDrawFingerprintSnapshot(
   return std::nullopt;
 }
 
-inline std::optional<std::filesystem::path> SaveCounterSnapshot(
-    const std::filesystem::path& path) {
+inline std::optional<std::filesystem::path> SaveCounterSnapshot(const std::filesystem::path& path) {
   (void)path;
   return std::nullopt;
 }
@@ -695,9 +691,10 @@ class Profiler {
 #define PROFILE_DRAW_FINGERPRINT(fingerprint) rex::perf::RecordDrawFingerprint(fingerprint)
 #define PROFILE_DRAW_STAGE_US(id, delta) rex::perf::IncrementCounter((id), (delta))
 #define PROFILE_GPU_TIMESTAMPED_DRAW() PERF_counter_inc(kGpuTimestampedDraws)
-#define PROFILE_SCOPE_COUNTER(id) \
-  rex::perf::ScopedCounterTimer REX_PERF_CONCAT(perf_scope_timer_, __LINE__)(rex::perf::CounterId::id)
-#define PROFILE_SCOPE_COUNTER_IF(id, active) \
+#define PROFILE_SCOPE_COUNTER(id)                                  \
+  rex::perf::ScopedCounterTimer REX_PERF_CONCAT(perf_scope_timer_, \
+                                                __LINE__)(rex::perf::CounterId::id)
+#define PROFILE_SCOPE_COUNTER_IF(id, active)                                  \
   rex::perf::ScopedCounterTimer REX_PERF_CONCAT(perf_scope_timer_, __LINE__)( \
       rex::perf::CounterId::id, active)
 #define PROFILE_CMD_BUFFER_STALL() PERF_counter_inc(kCommandBufferStalls)

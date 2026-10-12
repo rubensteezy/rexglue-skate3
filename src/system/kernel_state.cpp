@@ -1217,10 +1217,9 @@ void KernelState::CompleteOverlappedDeferredEx(std::move_only_function<void()> c
       overlapped_ptr, std::move(pre_callback), std::move(post_callback));
 }
 
-void KernelState::CompleteOverlappedDeferred(std::move_only_function<X_RESULT()> completion_callback,
-                                             uint32_t overlapped_ptr,
-                                             std::move_only_function<void()> pre_callback,
-                                             std::move_only_function<void()> post_callback) {
+void KernelState::CompleteOverlappedDeferred(
+    std::move_only_function<X_RESULT()> completion_callback, uint32_t overlapped_ptr,
+    std::move_only_function<void()> pre_callback, std::move_only_function<void()> post_callback) {
   CompleteOverlappedDeferredEx(
       [completion_callback = std::move(completion_callback)](uint32_t& extended_error,
                                                              uint32_t& length) mutable -> X_RESULT {

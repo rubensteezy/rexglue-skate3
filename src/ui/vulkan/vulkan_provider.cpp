@@ -169,8 +169,7 @@ std::unique_ptr<VulkanProvider> VulkanProvider::Create(const bool with_gpu_emula
   // path walks a preference-ordered copy of the list) so the settings device
   // picker can show the device automatic selection resolved to.
   {
-    const VkPhysicalDevice active_physical_device =
-        provider->vulkan_device_->physical_device();
+    const VkPhysicalDevice active_physical_device = provider->vulkan_device_->physical_device();
     for (size_t i = 0; i < physical_devices.size(); ++i) {
       if (physical_devices[i] == active_physical_device) {
         GraphicsDeviceList device_list = GetGraphicsDeviceList();

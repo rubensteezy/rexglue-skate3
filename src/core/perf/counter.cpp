@@ -112,19 +112,14 @@ bool IsDelayedGpuTimingCounter(size_t counter_index) {
   auto id = static_cast<CounterId>(counter_index);
   return id == CounterId::kGpuMainUs || id == CounterId::kGpuDepthUs ||
          id == CounterId::kGpuCopyUs || id == CounterId::kGpuMemexportUs ||
-         id == CounterId::kGpuNoPixelShaderUs ||
-         id == CounterId::kGpuCopyDumpUs ||
-         id == CounterId::kGpuCopyResolveUs ||
-         id == CounterId::kGpuCopyResolveFast32Us ||
-         id == CounterId::kGpuCopyResolveFull32Us ||
-         id == CounterId::kGpuResolveDownscaleUs ||
-         id == CounterId::kGpuTimestampedDraws ||
-         id == CounterId::kGpuCommandProcessorFrameUs ||
-         id == CounterId::kGpuTimestampedFrames ||
-         id == CounterId::kGpuBarrierUs || id == CounterId::kGpuClearUs ||
-         id == CounterId::kGpuCopyBufferUs || id == CounterId::kGpuCopyTextureUs ||
-         id == CounterId::kGpuCopyResourceUs || id == CounterId::kGpuDispatchUs ||
-         id == CounterId::kGpuResolveQueryUs;
+         id == CounterId::kGpuNoPixelShaderUs || id == CounterId::kGpuCopyDumpUs ||
+         id == CounterId::kGpuCopyResolveUs || id == CounterId::kGpuCopyResolveFast32Us ||
+         id == CounterId::kGpuCopyResolveFull32Us || id == CounterId::kGpuResolveDownscaleUs ||
+         id == CounterId::kGpuTimestampedDraws || id == CounterId::kGpuCommandProcessorFrameUs ||
+         id == CounterId::kGpuTimestampedFrames || id == CounterId::kGpuBarrierUs ||
+         id == CounterId::kGpuClearUs || id == CounterId::kGpuCopyBufferUs ||
+         id == CounterId::kGpuCopyTextureUs || id == CounterId::kGpuCopyResourceUs ||
+         id == CounterId::kGpuDispatchUs || id == CounterId::kGpuResolveQueryUs;
 }
 
 constexpr const char* kCounterNames[] = {
@@ -644,7 +639,8 @@ std::vector<DrawFingerprintEntry> GetDrawFingerprintSnapshot() {
   return g_draw_fingerprints_snapshot;
 }
 
-std::optional<std::filesystem::path> SaveDrawFingerprintSnapshot(const std::filesystem::path& path) {
+std::optional<std::filesystem::path> SaveDrawFingerprintSnapshot(
+    const std::filesystem::path& path) {
   return SaveDrawFingerprintEntries(GetDrawFingerprintSnapshot(), path);
 }
 

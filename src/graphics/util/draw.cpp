@@ -1053,8 +1053,7 @@ bool GetResolveInfo(const RegisterFile& regs, const memory::Memory& memory,
   bool fill_half_pixel_offset =
       (draw_resolution_scale_x > 1 || draw_resolution_scale_y > 1) &&
       REXCVAR_GET(resolve_resolution_scale_fill_half_pixel_offset) &&
-      REXCVAR_GET(half_pixel_offset) &&
-      !REXCVAR_GET(draw_resolution_scaled_half_pixel_offset) &&
+      REXCVAR_GET(half_pixel_offset) && !REXCVAR_GET(draw_resolution_scaled_half_pixel_offset) &&
       regs.Get<reg::PA_SU_VTX_CNTL>().pix_center == xenos::PixelCenter::kD3DZero;
   int32_t exp_bias = is_depth ? 0 : rb_copy_dest_info.copy_dest_exp_bias;
   ResolveEdramInfo depth_edram_info;

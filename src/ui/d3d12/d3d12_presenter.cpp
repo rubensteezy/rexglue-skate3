@@ -539,10 +539,8 @@ D3D12Presenter::ConnectOrReconnectPaintingToSurfaceFromUIThread(Surface& new_sur
         (swap_chain_desc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) != 0;
     paint_context_.swap_chain_flags = swap_chain_desc.Flags;
     if (paint_context_.swap_chain_frame_latency_waitable) {
-      UINT max_frame_latency =
-          UINT(std::max(int32_t(1), REXCVAR_GET(d3d12_max_frame_latency)));
-      HRESULT latency_result =
-          paint_context_.swap_chain->SetMaximumFrameLatency(max_frame_latency);
+      UINT max_frame_latency = UINT(std::max(int32_t(1), REXCVAR_GET(d3d12_max_frame_latency)));
+      HRESULT latency_result = paint_context_.swap_chain->SetMaximumFrameLatency(max_frame_latency);
       if (FAILED(latency_result)) {
         REXLOG_WARN("D3D12Presenter: SetMaximumFrameLatency({}) failed: 0x{:08X}",
                     max_frame_latency, uint32_t(latency_result));
@@ -722,8 +720,7 @@ Presenter::PaintResult D3D12Presenter::PaintAndPresentImpl(bool execute_ui_drawe
     // (and multiple threads can't paint the main target at the same time).
   }
 
-  rex::perf::ScopedCounterTimer paint_record_timer(
-      rex::perf::CounterId::kCpuD3D12PaintRecordUs);
+  rex::perf::ScopedCounterTimer paint_record_timer(rex::perf::CounterId::kCpuD3D12PaintRecordUs);
 
   if (guest_output_resource) {
     GuestOutputPaintFlow guest_output_flow = GetGuestOutputPaintFlow(
@@ -1281,8 +1278,7 @@ Presenter::PaintResult D3D12Presenter::PaintAndPresentImpl(bool execute_ui_drawe
   if (REXCVAR_GET(d3d12_present_frame_limiter)) {
     const double limiter_fps = REXCVAR_GET(d3d12_present_frame_limiter_fps);
     const uint64_t limiter_interval_ticks =
-        std::max(uint64_t(1),
-                 uint64_t(double(host_frequency) / std::max(1.0, limiter_fps)));
+        std::max(uint64_t(1), uint64_t(double(host_frequency) / std::max(1.0, limiter_fps)));
     uint64_t now = rex::chrono::Clock::QueryHostTickCount();
     if (!paint_context_.frame_limiter_next_present_tick ||
         now > paint_context_.frame_limiter_next_present_tick + limiter_interval_ticks) {

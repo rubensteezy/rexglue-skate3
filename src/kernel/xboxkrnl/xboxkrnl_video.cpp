@@ -45,8 +45,7 @@ constexpr double kSkate3BaseAspect = 16.0 / 9.0;
 // game a wide mode.
 bool Skate3UltrawideConfigured() {
   return rex::cvar::Query<bool>("skate3_ultrawide") &&
-         rex::cvar::Query<double>("skate3_ultrawide_target_aspect") >
-             kSkate3BaseAspect + 0.01;
+         rex::cvar::Query<double>("skate3_ultrawide_target_aspect") > kSkate3BaseAspect + 0.01;
 }
 
 uint32_t GetConfiguredVideoModeWidth() {

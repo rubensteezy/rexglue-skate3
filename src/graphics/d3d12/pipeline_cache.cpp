@@ -256,9 +256,9 @@ void PipelineCache::InitializeShaderStorage(const std::filesystem::path& cache_r
   // <Shader hash, modification bits>.
   std::set<std::pair<uint64_t, uint64_t>> shader_translations_needed;
   auto pipeline_storage_file_path =
-      shader_storage_shareable_root /
-      fmt::format("{:08X}.{}.{}.d3d12.xpso", title_id, shader_storage_scale_key,
-                  edram_rov_used ? "rov" : "rtv");
+      shader_storage_shareable_root / fmt::format("{:08X}.{}.{}.d3d12.xpso", title_id,
+                                                  shader_storage_scale_key,
+                                                  edram_rov_used ? "rov" : "rtv");
   pipeline_storage_file_ = rex::filesystem::OpenFile(pipeline_storage_file_path, "a+b");
   if (!pipeline_storage_file_) {
     REXGPU_ERROR(
@@ -334,9 +334,8 @@ void PipelineCache::InitializeShaderStorage(const std::filesystem::path& cache_r
 
   // Initialize the Xenos shader storage stream.
   uint64_t shader_storage_initialization_start = rex::chrono::Clock::QueryHostTickCount();
-  auto shader_storage_file_path =
-      shader_storage_shareable_root / fmt::format("{:08X}.{}.xsh", title_id,
-                                                  shader_storage_scale_key);
+  auto shader_storage_file_path = shader_storage_shareable_root /
+                                  fmt::format("{:08X}.{}.xsh", title_id, shader_storage_scale_key);
   shader_storage_file_ = rex::filesystem::OpenFile(shader_storage_file_path, "a+b");
   if (!shader_storage_file_) {
     REXGPU_ERROR(

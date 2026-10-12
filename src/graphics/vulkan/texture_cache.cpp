@@ -1597,11 +1597,9 @@ void VulkanTextureCache::DebugLogTeamProfileBackgroundGpuEvent(
   }
   const bool is_binding_event = std::string_view(action).starts_with("binding") ||
                                 std::string_view(action).starts_with("view");
-  const int32_t remaining = is_binding_event
-                                ? REXCVAR_GET(
-                                      vulkan_debug_log_team_profile_background_bindings_remaining)
-                                : REXCVAR_GET(
-                                      vulkan_debug_log_team_profile_background_candidates_remaining);
+  const int32_t remaining =
+      is_binding_event ? REXCVAR_GET(vulkan_debug_log_team_profile_background_bindings_remaining)
+                       : REXCVAR_GET(vulkan_debug_log_team_profile_background_candidates_remaining);
   if (remaining <= 0) {
     return;
   }
@@ -1649,9 +1647,8 @@ VkPipeline VulkanTextureCache::GetLoadPipelineScaledTexelBuffer(LoadShaderIndex 
   std::string compile_error;
   if (!command_processor_.CompileGlslToSpirv(VK_SHADER_STAGE_COMPUTE_BIT, source, spirv,
                                              compile_error)) {
-    REXGPU_WARN(
-        "VulkanTextureCache: Failed to compile the texel-buffer load shader (index {}): {}",
-        uint32_t(load_shader), compile_error);
+    REXGPU_WARN("VulkanTextureCache: Failed to compile the texel-buffer load shader (index {}): {}",
+                uint32_t(load_shader), compile_error);
     return VK_NULL_HANDLE;
   }
   VkPipeline pipeline = ui::vulkan::util::CreateComputePipeline(
@@ -2187,14 +2184,12 @@ bool VulkanTextureCache::LoadTextureDataFromResidentMemoryImpl(Texture& texture,
   uint64_t debug_team_profile_base_scaled_length = 0;
   uint64_t debug_team_profile_mips_scaled_start = 0;
   uint64_t debug_team_profile_mips_scaled_length = 0;
-  bool debug_team_profile_base_overlap =
-      DebugTextureOverlapsRecentTeamProfileBackgroundResolve(
-          texture, false, debug_team_profile_base_serial, debug_team_profile_base_scaled,
-          debug_team_profile_base_scaled_start, debug_team_profile_base_scaled_length);
-  bool debug_team_profile_mips_overlap =
-      DebugTextureOverlapsRecentTeamProfileBackgroundResolve(
-          texture, true, debug_team_profile_mips_serial, debug_team_profile_mips_scaled,
-          debug_team_profile_mips_scaled_start, debug_team_profile_mips_scaled_length);
+  bool debug_team_profile_base_overlap = DebugTextureOverlapsRecentTeamProfileBackgroundResolve(
+      texture, false, debug_team_profile_base_serial, debug_team_profile_base_scaled,
+      debug_team_profile_base_scaled_start, debug_team_profile_base_scaled_length);
+  bool debug_team_profile_mips_overlap = DebugTextureOverlapsRecentTeamProfileBackgroundResolve(
+      texture, true, debug_team_profile_mips_serial, debug_team_profile_mips_scaled,
+      debug_team_profile_mips_scaled_start, debug_team_profile_mips_scaled_length);
   if (DebugIsTeamProfileBackgroundTexture(texture)) {
     REXGPU_WARN(
         "Team profile BG Vulkan upload setup: scaled={}, load_base={}, load_mips={}, "
@@ -2215,8 +2210,8 @@ bool VulkanTextureCache::LoadTextureDataFromResidentMemoryImpl(Texture& texture,
         bool(texture_key.scaled_resolve), load_base, load_mips,
         texture_key.tiled ? "tiled" : "linear", texture_key.GetWidth(), texture_key.GetHeight(),
         texture_key.GetDepthOrArraySize(), FormatInfo::Get(texture_key.format)->name,
-        texture_key.base_page << 12, vulkan_texture.GetGuestBaseSize(),
-        texture_key.mip_page << 12, vulkan_texture.GetGuestMipsSize(),
+        texture_key.base_page << 12, vulkan_texture.GetGuestBaseSize(), texture_key.mip_page << 12,
+        vulkan_texture.GetGuestMipsSize(),
         texture_key.scaled_resolve ? "scaled-resolve" : "shared-memory", debug_source_base_start,
         debug_source_base_range, debug_source_mips_start, debug_source_mips_range,
         texture_resolution_scale_x, texture_resolution_scale_y, debug_team_profile_base_serial,
@@ -2264,18 +2259,16 @@ bool VulkanTextureCache::LoadTextureDataFromResidentMemoryImpl(Texture& texture,
   }
 
   VkPipelineLayout active_load_pipeline_layout =
-      use_storage_dest
-          ? load_pipeline_layout_storage_dest_
-          : (pipeline_texel != VK_NULL_HANDLE ? load_pipeline_layout_texel_
-                                              : load_pipeline_layout_);
+      use_storage_dest ? load_pipeline_layout_storage_dest_
+                       : (pipeline_texel != VK_NULL_HANDLE ? load_pipeline_layout_texel_
+                                                           : load_pipeline_layout_);
   command_processor_.BindExternalComputePipeline(
       use_storage_dest ? pipeline_storage_dest
                        : (pipeline_texel != VK_NULL_HANDLE ? pipeline_texel : pipeline));
 
-  command_buffer.CmdVkBindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE,
-                                         active_load_pipeline_layout,
-                                         kLoadDescriptorSetIndexDestination, 1,
-                                         &descriptor_set_dest, 0, nullptr);
+  command_buffer.CmdVkBindDescriptorSets(
+      VK_PIPELINE_BIND_POINT_COMPUTE, active_load_pipeline_layout,
+      kLoadDescriptorSetIndexDestination, 1, &descriptor_set_dest, 0, nullptr);
 
   VkDescriptorSet descriptor_set_source_current = VK_NULL_HANDLE;
 
@@ -2297,10 +2290,9 @@ bool VulkanTextureCache::LoadTextureDataFromResidentMemoryImpl(Texture& texture,
         is_base ? descriptor_set_source_base : descriptor_set_source_mips;
     if (descriptor_set_source_current != descriptor_set_source) {
       descriptor_set_source_current = descriptor_set_source;
-      command_buffer.CmdVkBindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE,
-                                             active_load_pipeline_layout,
-                                             kLoadDescriptorSetIndexSource, 1,
-                                             &descriptor_set_source, 0, nullptr);
+      command_buffer.CmdVkBindDescriptorSets(
+          VK_PIPELINE_BIND_POINT_COMPUTE, active_load_pipeline_layout,
+          kLoadDescriptorSetIndexSource, 1, &descriptor_set_source, 0, nullptr);
     }
 
     // TODO(Triang3l): guest_offset relative to the storage buffer origin.
@@ -2605,8 +2597,8 @@ void VulkanTextureCache::UpdateTextureBindingsImpl(uint32_t fetch_constant_mask)
           host_format_pair.format_unsigned.format != VK_FORMAT_UNDEFINED) {
         vulkan_binding.image_view_unsigned =
             static_cast<VulkanTexture*>(binding->texture)->GetView(false, binding->host_swizzle);
-        DebugLogTeamProfileBackgroundGpuEvent("binding-unsigned", binding_index,
-                                              *binding->texture, false, binding->host_swizzle,
+        DebugLogTeamProfileBackgroundGpuEvent("binding-unsigned", binding_index, *binding->texture,
+                                              false, binding->host_swizzle,
                                               vulkan_binding.image_view_unsigned);
       }
       if (binding->texture_signed && uses_signed &&
@@ -2614,8 +2606,7 @@ void VulkanTextureCache::UpdateTextureBindingsImpl(uint32_t fetch_constant_mask)
         vulkan_binding.image_view_signed = static_cast<VulkanTexture*>(binding->texture_signed)
                                                ->GetView(true, binding->host_swizzle);
         DebugLogTeamProfileBackgroundGpuEvent("binding-signed", binding_index,
-                                              *binding->texture_signed, true,
-                                              binding->host_swizzle,
+                                              *binding->texture_signed, true, binding->host_swizzle,
                                               vulkan_binding.image_view_signed);
       }
     } else {
@@ -2623,8 +2614,8 @@ void VulkanTextureCache::UpdateTextureBindingsImpl(uint32_t fetch_constant_mask)
       if (texture) {
         if (uses_unsigned && host_format_pair.format_unsigned.format != VK_FORMAT_UNDEFINED) {
           vulkan_binding.image_view_unsigned = texture->GetView(false, binding->host_swizzle);
-          DebugLogTeamProfileBackgroundGpuEvent("binding-unsigned", binding_index, *texture,
-                                                false, binding->host_swizzle,
+          DebugLogTeamProfileBackgroundGpuEvent("binding-unsigned", binding_index, *texture, false,
+                                                binding->host_swizzle,
                                                 vulkan_binding.image_view_unsigned);
         }
         if (uses_signed && host_format_pair.format_signed.format != VK_FORMAT_UNDEFINED) {
@@ -2780,7 +2771,7 @@ VkImageView VulkanTextureCache::VulkanTexture::GetView(bool is_signed, uint32_t 
   auto it = views_.find(view_key);
   if (it != views_.end()) {
     vulkan_texture_cache.DebugLogTeamProfileBackgroundGpuEvent("view-reuse", UINT32_MAX, *this,
-                                                              is_signed, host_swizzle, it->second);
+                                                               is_signed, host_swizzle, it->second);
     return it->second;
   }
 
@@ -2824,7 +2815,7 @@ VkImageView VulkanTextureCache::VulkanTexture::GetView(bool is_signed, uint32_t 
   }
   views_.emplace(view_key, view);
   vulkan_texture_cache.DebugLogTeamProfileBackgroundGpuEvent("view-create", UINT32_MAX, *this,
-                                                            is_signed, host_swizzle, view);
+                                                             is_signed, host_swizzle, view);
   return view;
 }
 
@@ -2865,11 +2856,10 @@ VkImageView VulkanTextureCache::VulkanTexture::GetOrCreate3DAs2DImageView(bool i
       image_create_info.extent.height *= vulkan_texture_cache.draw_resolution_scale_y();
     }
     if (Consume3DAs2DLogBudget()) {
-      REXGPU_WARN(
-          "Vulkan 3D-as-2D create: scaled={}, source={}x{}x{}, wrapper={}x{}x1, format={}",
-          bool(key().scaled_resolve), key().GetWidth(), key().GetHeight(),
-          key().GetDepthOrArraySize(), image_create_info.extent.width,
-          image_create_info.extent.height, uint32_t(wrapper_format));
+      REXGPU_WARN("Vulkan 3D-as-2D create: scaled={}, source={}x{}x{}, wrapper={}x{}x1, format={}",
+                  bool(key().scaled_resolve), key().GetWidth(), key().GetHeight(),
+                  key().GetDepthOrArraySize(), image_create_info.extent.width,
+                  image_create_info.extent.height, uint32_t(wrapper_format));
     }
     image_create_info.extent.depth = 1;
     image_create_info.mipLevels = 1;
@@ -2907,8 +2897,7 @@ VkImageView VulkanTextureCache::VulkanTexture::GetOrCreate3DAs2DImageView(bool i
     }
     if (Consume3DAs2DLogBudget()) {
       REXGPU_WARN("Vulkan 3D-as-2D load complete: scaled={}, wrapper_image={:016X}",
-                  bool(key().scaled_resolve),
-                  uint64_t(uintptr_t(texture_3d_as_2d_->image())));
+                  bool(key().scaled_resolve), uint64_t(uintptr_t(texture_3d_as_2d_->image())));
     }
 
     if (!vulkan_texture_cache.command_processor_.PushImageMemoryBarrier(
@@ -3242,11 +3231,13 @@ void VulkanTextureCache::UseScaledResolveBufferForWrite(uint64_t written_start_s
     return;
   }
   if (!scaled_resolve_last_written_range_.second) {
-    scaled_resolve_last_written_range_ = std::make_pair(written_start_scaled, written_length_scaled);
+    scaled_resolve_last_written_range_ =
+        std::make_pair(written_start_scaled, written_length_scaled);
     return;
   }
   uint64_t written_end = written_start_scaled + written_length_scaled;
-  uint64_t combined_start = std::min(scaled_resolve_last_written_range_.first, written_start_scaled);
+  uint64_t combined_start =
+      std::min(scaled_resolve_last_written_range_.first, written_start_scaled);
   uint64_t combined_end =
       std::max(scaled_resolve_last_written_range_.first + scaled_resolve_last_written_range_.second,
                written_end);
@@ -3732,8 +3723,7 @@ bool VulkanTextureCache::Initialize() {
         REXGPU_WARN(
             "VulkanTextureCache: Failed to create the texel-buffer load pipeline layout - using "
             "storage buffer texture loads");
-        dfn.vkDestroyDescriptorSetLayout(device, load_descriptor_set_layout_source_texel_,
-                                         nullptr);
+        dfn.vkDestroyDescriptorSetLayout(device, load_descriptor_set_layout_source_texel_, nullptr);
         load_descriptor_set_layout_source_texel_ = VK_NULL_HANDLE;
       }
     } else {
@@ -3784,8 +3774,7 @@ bool VulkanTextureCache::Initialize() {
         REXGPU_WARN(
             "VulkanTextureCache: Failed to create the storage-image load pipeline layout - using "
             "buffer texture loads");
-        dfn.vkDestroyDescriptorSetLayout(device, load_descriptor_set_layout_dest_storage_,
-                                         nullptr);
+        dfn.vkDestroyDescriptorSetLayout(device, load_descriptor_set_layout_dest_storage_, nullptr);
         load_descriptor_set_layout_dest_storage_ = VK_NULL_HANDLE;
       }
     } else {

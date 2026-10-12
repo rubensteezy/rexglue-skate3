@@ -50,8 +50,7 @@ X_HRESULT XgiApp::DispatchMessageSync(uint32_t message, uint32_t buffer_ptr,
       auto old_value = kernel_state_->GetUserContext(user_index, context_id);
       kernel_state_->SetUserContext(user_index, context_id, context_value);
       rex::kernel::guest_presence::NotifyContext(user_index, context_id, context_value);
-      if (rex::cvar::Query<bool>("skate3_demo_path") && user_index == 0 &&
-          context_id == 0x8001) {
+      if (rex::cvar::Query<bool>("skate3_demo_path") && user_index == 0 && context_id == 0x8001) {
         // Boot automation is strictly ONE-SHOT: the dialog A auto-tap exists
         // only to accept boot-flow dialogs (autosave prompt etc.) between the
         // press-start screen and gameplay. The game also sets this context to
@@ -427,11 +426,11 @@ X_HRESULT XgiApp::DispatchMessageSync(uint32_t message, uint32_t buffer_ptr,
       uint32_t context_id = context ? memory::load_and_swap<uint32_t>(context + 0) : 0;
       auto stored_value = kernel_state_->GetUserContext(user_index, context_id);
       if (stored_value) {
-        REXKRNL_DEBUG("XGIUserGetContext({:08X}, {:08X}, {:08X}) -> {:#x}", user_index,
-                      context_ptr, context_id, *stored_value);
+        REXKRNL_DEBUG("XGIUserGetContext({:08X}, {:08X}, {:08X}) -> {:#x}", user_index, context_ptr,
+                      context_id, *stored_value);
       } else {
-        REXKRNL_DEBUG("XGIUserGetContext({:08X}, {:08X}, {:08X}) -> unset", user_index,
-                      context_ptr, context_id);
+        REXKRNL_DEBUG("XGIUserGetContext({:08X}, {:08X}, {:08X}) -> unset", user_index, context_ptr,
+                      context_id);
       }
       if (context) {
         memory::store_and_swap<uint32_t>(context + 4, stored_value.value_or(0));

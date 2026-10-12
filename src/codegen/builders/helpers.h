@@ -406,10 +406,10 @@ inline void emitBranchWithBoundsCheck(BuilderContext& ctx, uint32_t target,
     return;
   }
 
-  REXCODEGEN_WARN("{} at {:X} branches outside function to unresolved {:X}", instr_name,
-                  ctx.base, target);
-  ctx.println("\tif ({}) REX_FATAL(\"Unresolved branch from 0x{:08X} to 0x{:08X}\");",
-              condition, ctx.base, target);
+  REXCODEGEN_WARN("{} at {:X} branches outside function to unresolved {:X}", instr_name, ctx.base,
+                  target);
+  ctx.println("\tif ({}) REX_FATAL(\"Unresolved branch from 0x{:08X} to 0x{:08X}\");", condition,
+              ctx.base, target);
 }
 
 //=============================================================================

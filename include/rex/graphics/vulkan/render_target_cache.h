@@ -107,8 +107,7 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
   // frame for calling.
   bool Resolve(const memory::Memory& memory, VulkanSharedMemory& shared_memory,
                VulkanTextureCache& texture_cache, uint32_t& written_address_out,
-               uint32_t& written_length_out,
-               bool debug_log_team_profile_background_trace = false);
+               uint32_t& written_length_out, bool debug_log_team_profile_background_trace = false);
   void DebugLogLastUpdateRenderTargetsForTeamProfileBackgroundDraw(uint64_t frame) const;
 
   bool Update(bool is_rasterization_done, reg::RB_DEPTHCONTROL normalized_depth_control,

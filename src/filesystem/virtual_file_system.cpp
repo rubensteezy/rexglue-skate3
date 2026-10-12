@@ -50,9 +50,8 @@ namespace {
 
 bool IsSkate3ChanCenterStreamPath(std::string_view path) {
   constexpr std::string_view kNeedles[] = {
-      "DIST_University",       "cTex_500_-300_high",  "cTex_500_-200_high",
-      "cTex_100_200_high",     "cPres_350_-50_high",  "cPres_350_-350_high",
-      "cPres_550_-150_high",   "cSim_150_-350_high",
+      "DIST_University",    "cTex_500_-300_high",  "cTex_500_-200_high",  "cTex_100_200_high",
+      "cPres_350_-50_high", "cPres_350_-350_high", "cPres_550_-150_high", "cSim_150_-350_high",
   };
   for (std::string_view needle : kNeedles) {
     if (path.find(needle) != std::string_view::npos) {
@@ -139,9 +138,8 @@ bool LooksLikeSkaterPreviewAssetPath(std::string_view path) {
   std::transform(lower.begin(), lower.end(), lower.begin(),
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   static constexpr std::string_view kNeedles[] = {
-      "import_skater",    "team_management", "preset",          "skater",
-      "preview",          "fedynamic",       "fedata",          "fetexture",
-      "createacharacter", "db.big",          "data/fe",         "data\\fe",
+      "import_skater", "team_management", "preset",           "skater", "preview", "fedynamic",
+      "fedata",        "fetexture",       "createacharacter", "db.big", "data/fe", "data\\fe",
   };
   for (std::string_view needle : kNeedles) {
     if (lower.find(needle) != std::string::npos) {
@@ -436,10 +434,10 @@ X_STATUS VirtualFileSystem::OpenFile(Entry* root_entry, const std::string_view p
       // Must not exist.
       if (entry) {
         *out_action = FileAction::kExists;
-        LogSkate3ChanCenterStreamFileOpen(
-            "collision", path, entry->absolute_path(), X_STATUS_OBJECT_NAME_COLLISION,
-            static_cast<uint32_t>(*out_action), desired_access,
-            static_cast<uint32_t>(creation_disposition));
+        LogSkate3ChanCenterStreamFileOpen("collision", path, entry->absolute_path(),
+                                          X_STATUS_OBJECT_NAME_COLLISION,
+                                          static_cast<uint32_t>(*out_action), desired_access,
+                                          static_cast<uint32_t>(creation_disposition));
         return X_STATUS_OBJECT_NAME_COLLISION;
       }
       break;
@@ -466,18 +464,18 @@ X_STATUS VirtualFileSystem::OpenFile(Entry* root_entry, const std::string_view p
       case FileDisposition::kCreate:
         // Shouldn't be possible to hit this.
         assert_always();
-        LogSkate3ChanCenterStreamFileOpen(
-            "invalid-create", path, entry->absolute_path(), X_STATUS_ACCESS_DENIED,
-            static_cast<uint32_t>(*out_action), desired_access,
-            static_cast<uint32_t>(creation_disposition));
+        LogSkate3ChanCenterStreamFileOpen("invalid-create", path, entry->absolute_path(),
+                                          X_STATUS_ACCESS_DENIED,
+                                          static_cast<uint32_t>(*out_action), desired_access,
+                                          static_cast<uint32_t>(creation_disposition));
         return X_STATUS_ACCESS_DENIED;
       case FileDisposition::kSuperscede:
         // Replace (by delete + recreate).
         if (!entry->Delete()) {
-          LogSkate3ChanCenterStreamFileOpen(
-              "delete-denied", path, entry->absolute_path(), X_STATUS_ACCESS_DENIED,
-              static_cast<uint32_t>(*out_action), desired_access,
-              static_cast<uint32_t>(creation_disposition));
+          LogSkate3ChanCenterStreamFileOpen("delete-denied", path, entry->absolute_path(),
+                                            X_STATUS_ACCESS_DENIED,
+                                            static_cast<uint32_t>(*out_action), desired_access,
+                                            static_cast<uint32_t>(creation_disposition));
           return X_STATUS_ACCESS_DENIED;
         }
         entry = nullptr;
@@ -495,10 +493,10 @@ X_STATUS VirtualFileSystem::OpenFile(Entry* root_entry, const std::string_view p
         if (entry->Delete()) {
           entry = nullptr;
         } else if (!entry->Truncate()) {
-          LogSkate3ChanCenterStreamFileOpen(
-              "truncate-denied", path, entry->absolute_path(), X_STATUS_ACCESS_DENIED,
-              static_cast<uint32_t>(*out_action), desired_access,
-              static_cast<uint32_t>(creation_disposition));
+          LogSkate3ChanCenterStreamFileOpen("truncate-denied", path, entry->absolute_path(),
+                                            X_STATUS_ACCESS_DENIED,
+                                            static_cast<uint32_t>(*out_action), desired_access,
+                                            static_cast<uint32_t>(creation_disposition));
           return X_STATUS_ACCESS_DENIED;
         }
         *out_action = FileAction::kOverwritten;
@@ -532,8 +530,9 @@ X_STATUS VirtualFileSystem::OpenFile(Entry* root_entry, const std::string_view p
         path, desired_access, static_cast<int>(creation_disposition), static_cast<int>(*out_action),
         result, entry ? entry->absolute_path() : std::string_view("<null>"));
   }
-  LogSkate3ChanCenterStreamFileOpen("open", path, entry ? entry->absolute_path() : std::string_view{},
-                                    result, static_cast<uint32_t>(*out_action), desired_access,
+  LogSkate3ChanCenterStreamFileOpen("open", path,
+                                    entry ? entry->absolute_path() : std::string_view{}, result,
+                                    static_cast<uint32_t>(*out_action), desired_access,
                                     static_cast<uint32_t>(creation_disposition));
   if (XFAILED(result)) {
     *out_action = FileAction::kDoesNotExist;

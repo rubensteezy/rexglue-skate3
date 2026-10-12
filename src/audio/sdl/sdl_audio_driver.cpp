@@ -348,8 +348,8 @@ void SDLAudioDriver::SDLCallback(void* userdata, SDL_AudioStream* stream, int ad
           double(driver->stats_frames_) / window_s,
           double(frame_frequency_) / double(channel_samples_), driver->stats_silence_chunks_,
           driver->stats_queue_min_ == SIZE_MAX ? 0 : driver->stats_queue_min_,
-          driver->stats_queue_max_, driver->pace_deferred_credits_,
-          driver->pace_allowance_frames_, driver->stats_max_callback_gap_ns_ / 1000000ull);
+          driver->stats_queue_max_, driver->pace_deferred_credits_, driver->pace_allowance_frames_,
+          driver->stats_max_callback_gap_ns_ / 1000000ull);
       driver->stats_window_start_ns_ = now_ns;
       driver->stats_callbacks_ = 0;
       driver->stats_frames_ = 0;

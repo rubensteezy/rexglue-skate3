@@ -65,9 +65,9 @@ void QueueSyntheticInputSequenceLocked(const SyntheticInputStep* steps, size_t s
   }
   g_synthetic_input_step_remaining =
       g_synthetic_input_step_count ? g_synthetic_input_steps[0].poll_count : 0;
-  g_synthetic_input_active.store(g_synthetic_input_step_count != 0 &&
-                                     g_synthetic_input_step_remaining != 0,
-                                 std::memory_order_relaxed);
+  g_synthetic_input_active.store(
+      g_synthetic_input_step_count != 0 && g_synthetic_input_step_remaining != 0,
+      std::memory_order_relaxed);
 }
 
 void EnsureSyntheticAutoTapLocked() {

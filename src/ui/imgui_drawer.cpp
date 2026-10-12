@@ -406,12 +406,12 @@ void ImGuiDrawer::SetupFonts() {
     // variants below keep gamma 1.0 - dark-on-light needs no correction.
     config.RasterizerGamma = 0.62f;
     config.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_NoHinting;
-    ui_font_ = io.Fonts->AddFontFromMemoryCompressedBase85TTF(
-        GetInterRegularCompressedBase85(), 18.0f, &config);
+    ui_font_ = io.Fonts->AddFontFromMemoryCompressedBase85TTF(GetInterRegularCompressedBase85(),
+                                                              18.0f, &config);
     ui_font_semibold_ = io.Fonts->AddFontFromMemoryCompressedBase85TTF(
         GetInterSemiBoldCompressedBase85(), 18.0f, &config);
-    ui_font_bold_ = io.Fonts->AddFontFromMemoryCompressedBase85TTF(
-        GetInterBoldCompressedBase85(), 18.0f, &config);
+    ui_font_bold_ = io.Fonts->AddFontFromMemoryCompressedBase85TTF(GetInterBoldCompressedBase85(),
+                                                                   18.0f, &config);
     // DARK-ON-LIGHT variants: naive sRGB alpha blending renders dark text on
     // light panels measurably fatter and softer than the browser (stems 4.94
     // vs 4.70 px, vertical edge gradient 73 vs 92) - the
@@ -463,41 +463,40 @@ void ImGuiDrawer::SetupFonts() {
     return paths;
   };
   if (!ui_font_) {
-    ui_font_ = add_first_available(win_font_paths(
-        {"HelveticaNowText-Regular.ttf", "HelveticaNowDisplay-Regular.ttf",
-         "HelveticaNow-Regular.ttf", "Helvetica.ttf", "HelveticaNeue.ttf", "arial.ttf",
-         "segoeui.ttf"}));
-  }
-  if (!ui_font_semibold_) {
-    ui_font_semibold_ = add_first_available(win_font_paths(
-        {"HelveticaNowText-Bold.ttf", "HelveticaNowDisplay-Bold.ttf", "HelveticaNow-Bold.ttf",
-         "Helvetica-Bold.ttf", "HelveticaNeue-Bold.ttf", "arialbd.ttf", "seguisb.ttf",
-         "segoeuib.ttf"}));
-  }
-#elif defined(__APPLE__)
-  if (!ui_font_) {
-    ui_font_ = add_first_available({"/System/Library/Fonts/Helvetica.ttc",
-                                    "/System/Library/Fonts/Supplemental/Arial.ttf"});
-  }
-  if (!ui_font_semibold_) {
-    ui_font_semibold_ =
-        add_first_available({"/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-                             "/System/Library/Fonts/Helvetica.ttc"});
-  }
-#else
-  if (!ui_font_) {
     ui_font_ = add_first_available(
-        {"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-         "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-         "/usr/share/fonts/noto/NotoSans-Regular.ttf"});
+        win_font_paths({"HelveticaNowText-Regular.ttf", "HelveticaNowDisplay-Regular.ttf",
+                        "HelveticaNow-Regular.ttf", "Helvetica.ttf", "HelveticaNeue.ttf",
+                        "arial.ttf", "segoeui.ttf"}));
   }
   if (!ui_font_semibold_) {
     ui_font_semibold_ = add_first_available(
-        {"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-         "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
-         "/usr/share/fonts/noto/NotoSans-Bold.ttf"});
+        win_font_paths({"HelveticaNowText-Bold.ttf", "HelveticaNowDisplay-Bold.ttf",
+                        "HelveticaNow-Bold.ttf", "Helvetica-Bold.ttf", "HelveticaNeue-Bold.ttf",
+                        "arialbd.ttf", "seguisb.ttf", "segoeuib.ttf"}));
+  }
+#elif defined(__APPLE__)
+  if (!ui_font_) {
+    ui_font_ = add_first_available(
+        {"/System/Library/Fonts/Helvetica.ttc", "/System/Library/Fonts/Supplemental/Arial.ttf"});
+  }
+  if (!ui_font_semibold_) {
+    ui_font_semibold_ = add_first_available({"/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                                             "/System/Library/Fonts/Helvetica.ttc"});
+  }
+#else
+  if (!ui_font_) {
+    ui_font_ =
+        add_first_available({"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                             "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                             "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+                             "/usr/share/fonts/noto/NotoSans-Regular.ttf"});
+  }
+  if (!ui_font_semibold_) {
+    ui_font_semibold_ =
+        add_first_available({"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                             "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                             "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+                             "/usr/share/fonts/noto/NotoSans-Bold.ttf"});
   }
 #endif
   if (!ui_font_) {

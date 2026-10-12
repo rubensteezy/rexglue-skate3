@@ -93,15 +93,13 @@ REXCVAR_DEFINE_INT32(vulkan_debug_frame_summary_interval_frames, 30, "GPU/Vulkan
     .lifecycle(rex::cvar::Lifecycle::kHotReload)
     .debug_only();
 
-REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_candidates_remaining, 0,
-                     "GPU/Vulkan",
+REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_candidates_remaining, 0, "GPU/Vulkan",
                      "Log texture lifecycle events matching team_profile_background_0.rx2")
     .range(0, 10000)
     .lifecycle(rex::cvar::Lifecycle::kHotReload)
     .debug_only();
 
-REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_bindings_remaining, 0,
-                     "GPU/Vulkan",
+REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_bindings_remaining, 0, "GPU/Vulkan",
                      "Log texture binding events matching team_profile_background_0.rx2")
     .range(0, 10000)
     .lifecycle(rex::cvar::Lifecycle::kHotReload)
@@ -697,8 +695,8 @@ void TextureCache::RequestTextures(uint32_t used_texture_mask) {
   DebugLogScaledTextureBindings(used_texture_mask);
 }
 
-bool TextureCache::DebugGetActiveTextureBinding(
-    uint32_t fetch_constant_index, DebugActiveTextureBinding& binding_out) const {
+bool TextureCache::DebugGetActiveTextureBinding(uint32_t fetch_constant_index,
+                                                DebugActiveTextureBinding& binding_out) const {
   binding_out = {};
   if (fetch_constant_index >= texture_bindings_.size()) {
     return false;
@@ -740,9 +738,8 @@ void TextureCache::DebugRecordResolveReadback(uint32_t start, uint32_t length, b
   range.scaled = scaled;
   debug_recent_resolve_readback_next_ =
       (debug_recent_resolve_readback_next_ + 1) % debug_recent_resolve_readbacks_.size();
-  debug_recent_resolve_readback_count_ =
-      std::min<uint32_t>(debug_recent_resolve_readback_count_ + 1,
-                         uint32_t(debug_recent_resolve_readbacks_.size()));
+  debug_recent_resolve_readback_count_ = std::min<uint32_t>(
+      debug_recent_resolve_readback_count_ + 1, uint32_t(debug_recent_resolve_readbacks_.size()));
 
   int32_t remaining = REXCVAR_GET(vulkan_debug_log_frame_summaries_remaining);
   int32_t interval = std::max(1, REXCVAR_GET(vulkan_debug_frame_summary_interval_frames));
@@ -762,8 +759,7 @@ void TextureCache::DebugClearRecentResolveReadbacks() {
 }
 
 void TextureCache::DebugRecordTeamProfileBackgroundResolveRange(uint32_t start, uint32_t length,
-                                                                bool scaled,
-                                                                uint64_t scaled_start,
+                                                                bool scaled, uint64_t scaled_start,
                                                                 uint64_t scaled_length) {
   if (!length) {
     return;
@@ -778,8 +774,7 @@ void TextureCache::DebugRecordTeamProfileBackgroundResolveRange(uint32_t start, 
   range.scaled_start = scaled_start;
   range.scaled_length = scaled_length;
   debug_recent_team_profile_resolve_next_ =
-      (debug_recent_team_profile_resolve_next_ + 1) %
-      debug_recent_team_profile_resolves_.size();
+      (debug_recent_team_profile_resolve_next_ + 1) % debug_recent_team_profile_resolves_.size();
   debug_recent_team_profile_resolve_count_ =
       std::min<uint32_t>(debug_recent_team_profile_resolve_count_ + 1,
                          uint32_t(debug_recent_team_profile_resolves_.size()));
@@ -875,11 +870,9 @@ void TextureCache::DebugLogTeamProfileBackgroundTextureCandidate(const char* act
     return;
   }
   const bool is_bind_action = std::string_view(action).starts_with("bind");
-  const int32_t remaining = is_bind_action
-                                ? REXCVAR_GET(
-                                      vulkan_debug_log_team_profile_background_bindings_remaining)
-                                : REXCVAR_GET(
-                                      vulkan_debug_log_team_profile_background_candidates_remaining);
+  const int32_t remaining =
+      is_bind_action ? REXCVAR_GET(vulkan_debug_log_team_profile_background_bindings_remaining)
+                     : REXCVAR_GET(vulkan_debug_log_team_profile_background_candidates_remaining);
   if (remaining <= 0) {
     return;
   }
@@ -910,18 +903,19 @@ void TextureCache::DebugLogTeamProfileBackgroundTextureCandidate(const char* act
   REXGPU_WARN(
       "Team profile BG texture candidate: action={}, fetch={}, scaled={}, {} {}x{}x{} {}, "
       "base={:08X}+{:X}, mips={:08X}+{:X}, pitch={}, mip_max={}, packed_mips={}, "
-      "sample_len={:X}, nonzero={}, hash={:016X}, head={:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-      action, fetch_index, bool(key.scaled_resolve), key.tiled ? "tiled" : "linear",
-      key.GetWidth(), key.GetHeight(), key.GetDepthOrArraySize(),
-      FormatInfo::Get(key.format)->name, key.base_page << 12, texture.GetGuestBaseSize(),
-      key.mip_page << 12, texture.GetGuestMipsSize(), key.pitch << 5, key.mip_max_level,
-      bool(key.packed_mips), sample_length, nonzero_count, fnv1a, head[0], head[1], head[2],
-      head[3], head[4], head[5], head[6], head[7]);
+      "sample_len={:X}, nonzero={}, hash={:016X}, "
+      "head={:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+      action, fetch_index, bool(key.scaled_resolve), key.tiled ? "tiled" : "linear", key.GetWidth(),
+      key.GetHeight(), key.GetDepthOrArraySize(), FormatInfo::Get(key.format)->name,
+      key.base_page << 12, texture.GetGuestBaseSize(), key.mip_page << 12,
+      texture.GetGuestMipsSize(), key.pitch << 5, key.mip_max_level, bool(key.packed_mips),
+      sample_length, nonzero_count, fnv1a, head[0], head[1], head[2], head[3], head[4], head[5],
+      head[6], head[7]);
 }
 
-bool TextureCache::DebugTextureOverlapsRecentResolveReadback(
-    const Texture& texture, bool mips, uint32_t& readback_serial_out,
-    bool& readback_scaled_out) const {
+bool TextureCache::DebugTextureOverlapsRecentResolveReadback(const Texture& texture, bool mips,
+                                                             uint32_t& readback_serial_out,
+                                                             bool& readback_scaled_out) const {
   const TextureKey& key = texture.key();
   uint32_t texture_start = (mips ? key.mip_page : key.base_page) << 12;
   uint32_t texture_length = mips ? texture.GetGuestMipsSize() : texture.GetGuestBaseSize();
@@ -1088,21 +1082,18 @@ void TextureCache::DebugLogScaledTextureBindings(uint32_t used_texture_mask) {
         "{}, base={:08X}+{:X}, mips={:08X}+{:X}, pitch={}, host={}x{}, readback_base=#{} {}, "
         "readback_mips=#{} {}, team_profile_base=#{} {} {:X}+{:X}, "
         "team_profile_mips=#{} {} {:X}+{:X}",
-        remaining, fetch_index, view_name, bool(key.scaled_resolve),
-        key.tiled ? "tiled" : "linear", key.GetWidth(), key.GetHeight(),
-        key.GetDepthOrArraySize(), FormatInfo::Get(key.format)->name,
-        key.base_page << 12, texture->GetGuestBaseSize(), key.mip_page << 12,
-        texture->GetGuestMipsSize(), key.pitch << 5,
+        remaining, fetch_index, view_name, bool(key.scaled_resolve), key.tiled ? "tiled" : "linear",
+        key.GetWidth(), key.GetHeight(), key.GetDepthOrArraySize(),
+        FormatInfo::Get(key.format)->name, key.base_page << 12, texture->GetGuestBaseSize(),
+        key.mip_page << 12, texture->GetGuestMipsSize(), key.pitch << 5,
         key.GetWidth() * (key.scaled_resolve ? draw_resolution_scale_x_ : 1),
-        key.GetHeight() * (key.scaled_resolve ? draw_resolution_scale_y_ : 1),
-        base_readback_serial, overlaps_base_readback ? (base_readback_scaled ? "scaled" : "1x")
-                                                     : "none",
-        mips_readback_serial, overlaps_mips_readback ? (mips_readback_scaled ? "scaled" : "1x")
-                                                     : "none",
+        key.GetHeight() * (key.scaled_resolve ? draw_resolution_scale_y_ : 1), base_readback_serial,
+        overlaps_base_readback ? (base_readback_scaled ? "scaled" : "1x") : "none",
+        mips_readback_serial,
+        overlaps_mips_readback ? (mips_readback_scaled ? "scaled" : "1x") : "none",
         base_team_profile_serial,
         overlaps_base_team_profile ? (base_team_profile_scaled ? "scaled" : "1x") : "none",
-        base_team_profile_scaled_start, base_team_profile_scaled_length,
-        mips_team_profile_serial,
+        base_team_profile_scaled_start, base_team_profile_scaled_length, mips_team_profile_serial,
         overlaps_mips_team_profile ? (mips_team_profile_scaled ? "scaled" : "1x") : "none",
         mips_team_profile_scaled_start, mips_team_profile_scaled_length);
   };
@@ -1393,8 +1384,7 @@ TextureCache::Texture* TextureCache::FindOrCreateTexture(TextureKey key) {
   // previously 0, now not 0, to save memory - common case in streaming.
   auto found_texture_it = textures_.find(key);
   if (found_texture_it != textures_.end()) {
-    DebugLogTeamProfileBackgroundTextureCandidate("reuse", UINT32_MAX,
-                                                  *found_texture_it->second);
+    DebugLogTeamProfileBackgroundTextureCandidate("reuse", UINT32_MAX, *found_texture_it->second);
     return found_texture_it->second.get();
   }
 

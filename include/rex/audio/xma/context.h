@@ -252,8 +252,7 @@ class XmaContext {
   kPacketInfo GetPacketInfo(uint8_t* packet, uint32_t frame_offset);
   uint32_t GetAmountOfBitsToRead(uint32_t remaining_stream_bits, uint32_t frame_size);
   kPacketHandle GetPacketHandle(XMA_CONTEXT_DATA* data, uint32_t buffer_index,
-                                uint32_t packet_index,
-                                uint32_t current_input_packet_count);
+                                uint32_t packet_index, uint32_t current_input_packet_count);
   const uint8_t* GetNextPacket(XMA_CONTEXT_DATA* data, uint32_t next_packet_index,
                                uint32_t current_input_packet_count);
   uint32_t GetNextPacketReadOffset(uint8_t* buffer, uint32_t next_packet_index,

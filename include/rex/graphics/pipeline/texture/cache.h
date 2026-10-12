@@ -125,10 +125,8 @@ class TextureCache {
   void DebugRecordResolveReadback(uint32_t start, uint32_t length, bool scaled);
   void DebugClearRecentResolveReadbacks();
   void DebugRecordTeamProfileBackgroundResolveRange(uint32_t start, uint32_t length, bool scaled,
-                                                    uint64_t scaled_start,
-                                                    uint64_t scaled_length);
-  bool DebugFindTeamProfileBackgroundBinding(uint32_t used_texture_mask,
-                                             uint32_t& fetch_index_out,
+                                                    uint64_t scaled_start, uint64_t scaled_length);
+  bool DebugFindTeamProfileBackgroundBinding(uint32_t used_texture_mask, uint32_t& fetch_index_out,
                                              bool& signed_view_out,
                                              uint32_t* texture_base_out = nullptr,
                                              uint32_t* texture_length_out = nullptr) const;
@@ -566,9 +564,8 @@ class TextureCache {
   virtual bool LoadTextureDataFromResidentMemoryImpl(Texture& texture, bool load_base,
                                                      bool load_mips) = 0;
   bool DebugTextureOverlapsRecentTeamProfileBackgroundResolve(
-      const Texture& texture, bool mips, uint32_t& resolve_serial_out,
-      bool& resolve_scaled_out, uint64_t& resolve_scaled_start_out,
-      uint64_t& resolve_scaled_length_out) const;
+      const Texture& texture, bool mips, uint32_t& resolve_serial_out, bool& resolve_scaled_out,
+      uint64_t& resolve_scaled_start_out, uint64_t& resolve_scaled_length_out) const;
 
   // Converts a texture fetch constant to a texture key, normalizing and
   // validating the values, or creating an invalid key, and also gets the

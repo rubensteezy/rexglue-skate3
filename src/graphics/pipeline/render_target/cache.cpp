@@ -1392,7 +1392,8 @@ bool RenderTargetCache::IsOwnershipConfinedToRange(RenderTargetKey key,
     return false;
   }
   // Convert to up to two absolute extents the same way as ChangeOwnership.
-  uint32_t start_tiles = (key.base_tiles + start_tiles_base_relative) & (xenos::kEdramTileCount - 1);
+  uint32_t start_tiles =
+      (key.base_tiles + start_tiles_base_relative) & (xenos::kEdramTileCount - 1);
   uint32_t end_tiles = start_tiles + length_tiles;
   uint32_t extent_starts[2] = {start_tiles, 0};
   uint32_t extent_ends[2] = {std::min(end_tiles, xenos::kEdramTileCount), 0};

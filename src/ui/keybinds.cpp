@@ -269,10 +269,8 @@ bool ProcessKeyEvent(KeyEvent& e) {
        regardless of held modifiers, so a bind like "End" still works while
        Shift/Ctrl are held for another purpose. */
     if (chord.has_modifiers() &&
-        (e.is_shift_pressed() != chord.shift ||
-         e.is_ctrl_pressed() != chord.ctrl ||
-         e.is_alt_pressed() != chord.alt ||
-         e.is_super_pressed() != chord.super_key)) {
+        (e.is_shift_pressed() != chord.shift || e.is_ctrl_pressed() != chord.ctrl ||
+         e.is_alt_pressed() != chord.alt || e.is_super_pressed() != chord.super_key)) {
       continue;
     }
     entry.callback();

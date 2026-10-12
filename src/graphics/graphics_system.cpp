@@ -96,8 +96,8 @@ uint64_t UsToTicksInteger(uint64_t us, uint64_t frequency) {
 void PreciseWaitUntilHostTick(uint64_t target_host_tick, uint64_t host_frequency) {
   const uint64_t sleep_margin_ticks = UsToTicksInteger(
       uint64_t(std::max(0, REXCVAR_GET(vblank_precise_sleep_margin_us))), host_frequency);
-  const uint64_t spin_ticks = UsToTicksInteger(
-      uint64_t(std::max(0, REXCVAR_GET(vblank_precise_spin_us))), host_frequency);
+  const uint64_t spin_ticks =
+      UsToTicksInteger(uint64_t(std::max(0, REXCVAR_GET(vblank_precise_spin_us))), host_frequency);
 
   while (true) {
     uint64_t now = chrono::Clock::QueryHostTickCount();
@@ -230,9 +230,8 @@ X_STATUS GraphicsSystem::SetupGuestGpu(runtime::FunctionDispatcher* function_dis
           double no_vsync_rate_hz = 1000.0;
           if (REXCVAR_GET(vblank_no_vsync_use_present_limiter) &&
               rex::cvar::Query<bool>("d3d12_present_frame_limiter")) {
-            no_vsync_rate_hz =
-                std::clamp(rex::cvar::Query<double>("d3d12_present_frame_limiter_fps"), 1.0,
-                           1000.0);
+            no_vsync_rate_hz = std::clamp(
+                rex::cvar::Query<double>("d3d12_present_frame_limiter_fps"), 1.0, 1000.0);
           }
           return std::max(uint64_t(1), uint64_t(double(frequency) / no_vsync_rate_hz));
         };

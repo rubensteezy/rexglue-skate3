@@ -141,9 +141,8 @@ void AcquireWizardDialog::OnDraw(ImGuiIO& io) {
   }
   // The connecting-status substitution only applies while a fetch is live.
   const std::string& status = state_ == State::kWorking ? WorkingStatus() : status_;
-  spec.paragraphs.push_back({status, options_.intro.empty()
-                                         ? WizardScreenSpec::Emphasis::kNormal
-                                         : WizardScreenSpec::Emphasis::kDim});
+  spec.paragraphs.push_back({status, options_.intro.empty() ? WizardScreenSpec::Emphasis::kNormal
+                                                            : WizardScreenSpec::Emphasis::kDim});
   if (state_ == State::kFailed && !error_.empty()) {
     spec.paragraphs.push_back({error_, WizardScreenSpec::Emphasis::kDanger});
   }
@@ -176,8 +175,7 @@ void AcquireWizardDialog::OnDraw(ImGuiIO& io) {
     spec.actions.push_back(options_.done_button_label);
   }
 
-  const int activated =
-      DrawWizardScreen(imgui_drawer(), io, spec, focus_index_, highlight_anim_y_);
+  const int activated = DrawWizardScreen(imgui_drawer(), io, spec, focus_index_, highlight_anim_y_);
   if (run_complete) {
     auto complete = std::move(complete_);
     Close();

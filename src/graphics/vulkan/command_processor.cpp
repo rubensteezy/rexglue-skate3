@@ -87,8 +87,7 @@ REXCVAR_DEFINE_INT32(vulkan_debug_log_resolve_decisions_remaining, 0, "GPU/Vulka
     .lifecycle(rex::cvar::Lifecycle::kHotReload)
     .debug_only();
 
-REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_draws_remaining, 0,
-                     "GPU/Vulkan",
+REXCVAR_DEFINE_INT32(vulkan_debug_log_team_profile_background_draws_remaining, 0, "GPU/Vulkan",
                      "Log draws sampling the exact team_profile_background_0.rx2 texture")
     .range(0, 10000)
     .lifecycle(rex::cvar::Lifecycle::kHotReload)
@@ -208,18 +207,18 @@ void LogGpuClockTelemetry() {
     REXCVAR_SET(vulkan_gpu_clock_log_interval_frames, 0);
     return;
   }
-  const uint32_t sm_delta =
-      sample.sm_mhz > last_logged_sm_mhz ? sample.sm_mhz - last_logged_sm_mhz
-                                         : last_logged_sm_mhz - sample.sm_mhz;
+  const uint32_t sm_delta = sample.sm_mhz > last_logged_sm_mhz ? sample.sm_mhz - last_logged_sm_mhz
+                                                               : last_logged_sm_mhz - sample.sm_mhz;
   const bool state_changed = sample.performance_state != last_logged_pstate ||
                              sm_delta * 5 > last_logged_sm_mhz;  // >20% swing.
   if (!state_changed && frames_since_log < uint32_t(interval)) {
     return;
   }
-  REXGPU_INFO("Vulkan GPU clocks: sm={}MHz mem={}MHz pstate=P{} util={}% memutil={}% "
-              "throttle={:#x}",
-              sample.sm_mhz, sample.mem_mhz, sample.performance_state, sample.gpu_util_percent,
-              sample.mem_util_percent, sample.throttle_reasons);
+  REXGPU_INFO(
+      "Vulkan GPU clocks: sm={}MHz mem={}MHz pstate=P{} util={}% memutil={}% "
+      "throttle={:#x}",
+      sample.sm_mhz, sample.mem_mhz, sample.performance_state, sample.gpu_util_percent,
+      sample.mem_util_percent, sample.throttle_reasons);
   frames_since_log = 0;
   last_logged_pstate = sample.performance_state;
   last_logged_sm_mhz = sample.sm_mhz;
@@ -414,9 +413,8 @@ void DebugDumpResolveReadback(uint32_t address, uint32_t length, bool scaled, co
       std::filesystem::path("logs") / "texture_dumps" / "manifest.csv";
   std::ofstream manifest_file(manifest_path, std::ios::app);
   if (manifest_file) {
-    manifest_file << dump_count << ",0x" << std::hex << std::uppercase << address << ",0x"
-                  << length << "," << (scaled ? "scaled" : "unscaled") << "," << filename
-                  << "\n";
+    manifest_file << dump_count << ",0x" << std::hex << std::uppercase << address << ",0x" << length
+                  << "," << (scaled ? "scaled" : "unscaled") << "," << filename << "\n";
   }
 
   REXGPU_INFO("Dumped Vulkan resolve readback texture {}: address={:08X}, length={:X}, scaled={}",
@@ -2608,11 +2606,9 @@ void VulkanCommandProcessor::IssueSwap(uint32_t frontbuffer_ptr, uint32_t frontb
     if (remaining <= 0) {
       return;
     }
-    const int32_t interval =
-        std::max(1, REXCVAR_GET(vulkan_debug_frame_summary_interval_frames));
+    const int32_t interval = std::max(1, REXCVAR_GET(vulkan_debug_frame_summary_interval_frames));
     const bool should_log = remaining == 36000 || remaining == 3600 ||
-                            (remaining % interval) == 0 ||
-                            skip_present_due_async_placeholder ||
+                            (remaining % interval) == 0 || skip_present_due_async_placeholder ||
                             debug_frame_placeholder_draws_ != 0;
     if (should_log) {
       REXGPU_WARN(
@@ -2630,24 +2626,22 @@ void VulkanCommandProcessor::IssueSwap(uint32_t frontbuffer_ptr, uint32_t frontb
           debug_frame_placeholder_draws_, debug_frame_resolve_ranges_,
           debug_frame_scaled_resolve_ranges_, debug_frame_resolve_bytes_,
           debug_frame_resolve_addresses_[0], debug_frame_resolve_lengths_[0],
-          debug_frame_resolve_scaled_[0] ? "s" : "",
-          debug_frame_resolve_addresses_[1], debug_frame_resolve_lengths_[1],
-          debug_frame_resolve_scaled_[1] ? "s" : "",
+          debug_frame_resolve_scaled_[0] ? "s" : "", debug_frame_resolve_addresses_[1],
+          debug_frame_resolve_lengths_[1], debug_frame_resolve_scaled_[1] ? "s" : "",
           debug_frame_resolve_addresses_[2], debug_frame_resolve_lengths_[2],
-          debug_frame_resolve_scaled_[2] ? "s" : "",
-          debug_frame_resolve_addresses_[3], debug_frame_resolve_lengths_[3],
-          debug_frame_resolve_scaled_[3] ? "s" : "",
+          debug_frame_resolve_scaled_[2] ? "s" : "", debug_frame_resolve_addresses_[3],
+          debug_frame_resolve_lengths_[3], debug_frame_resolve_scaled_[3] ? "s" : "",
           debug_frame_resolve_addresses_[4], debug_frame_resolve_lengths_[4],
-          debug_frame_resolve_scaled_[4] ? "s" : "",
-          debug_frame_resolve_addresses_[5], debug_frame_resolve_lengths_[5],
-          debug_frame_resolve_scaled_[5] ? "s" : "", skip_present_due_async_placeholder);
+          debug_frame_resolve_scaled_[4] ? "s" : "", debug_frame_resolve_addresses_[5],
+          debug_frame_resolve_lengths_[5], debug_frame_resolve_scaled_[5] ? "s" : "",
+          skip_present_due_async_placeholder);
     }
     REXCVAR_SET(vulkan_debug_log_frame_summaries_remaining, remaining - 1);
   };
   log_debug_frame_summary();
   if (skip_present_due_async_placeholder) {
-    const uint32_t max_consecutive_skips = uint32_t(std::max(
-        0, REXCVAR_GET(vulkan_async_placeholder_max_consecutive_skips)));
+    const uint32_t max_consecutive_skips =
+        uint32_t(std::max(0, REXCVAR_GET(vulkan_async_placeholder_max_consecutive_skips)));
     if (!max_consecutive_skips ||
         async_placeholder_consecutive_frame_skips_ < max_consecutive_skips) {
       ++async_placeholder_consecutive_frame_skips_;
@@ -3547,12 +3541,11 @@ void VulkanCommandProcessor::SubmitBarriersAndEnterRenderTargetCacheRenderPass(
   // transitions, pass end/begin and deferred resolve clear replay) separately
   // - reported in the FPS overlay's "other" line. Don't open a region on the
   // no-op path (same pass, no barriers), it runs for every draw.
-  bool pass_entry_work =
-      !pending_barriers_.empty() || current_pending_barrier_.src_stage_mask ||
-      current_pending_barrier_.dst_stage_mask ||
-      !(in_render_pass_ && current_framebuffer_ == framebuffer &&
-        (use_dynamic_rendering ? current_render_pass_ == VK_NULL_HANDLE
-                               : current_render_pass_ == render_pass));
+  bool pass_entry_work = !pending_barriers_.empty() || current_pending_barrier_.src_stage_mask ||
+                         current_pending_barrier_.dst_stage_mask ||
+                         !(in_render_pass_ && current_framebuffer_ == framebuffer &&
+                           (use_dynamic_rendering ? current_render_pass_ == VK_NULL_HANDLE
+                                                  : current_render_pass_ == render_pass));
   if (pass_entry_work) {
     BeginGpuTimestampedRegion(rex::perf::DrawBucket::kRenderPassEntry);
   }
@@ -4062,8 +4055,7 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
 #if XE_GPU_FINE_GRAINED_DRAW_SCOPES
   SCOPE_profile_cpu_f("gpu");
 #endif  // XE_GPU_FINE_GRAINED_DRAW_SCOPES
-  rex::perf::ScopedCounterTimer draw_stage_total_timer(
-      rex::perf::CounterId::kDrawStageTotalUs);
+  rex::perf::ScopedCounterTimer draw_stage_total_timer(rex::perf::CounterId::kDrawStageTotalUs);
 
   const RegisterFile& regs = *register_file_;
   (void)index_buffer_info;
@@ -4126,8 +4118,7 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
         const uint64_t now_ms = rex::chrono::Clock::QueryHostUptimeMillis();
         if (now_ms - s_drop_log_ms >= 1000) {
           if (s_drop_log_count > 8) {
-            REXLOG_INFO("readback-window: (+{} more dropped resolves)",
-                        s_drop_log_count - 8);
+            REXLOG_INFO("readback-window: (+{} more dropped resolves)", s_drop_log_count - 8);
           }
           s_drop_log_ms = now_ms;
           s_drop_log_count = 0;
@@ -4142,8 +4133,7 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
       }
       return true;
     }
-    uint32_t gpu_timestamp_start =
-        BeginGpuTimestampedDraw(rex::perf::DrawBucket::kCopyResolve);
+    uint32_t gpu_timestamp_start = BeginGpuTimestampedDraw(rex::perf::DrawBucket::kCopyResolve);
     bool copy_result = IssueCopy();
     EndGpuTimestampedDraw(gpu_timestamp_start);
     return copy_result;
@@ -4351,8 +4341,7 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
       return draw_fail("shader_translation");
     }
     translate_stage_timer.Stop();
-    rex::perf::ScopedCounterTimer samplers_stage_timer(
-        rex::perf::CounterId::kDrawStageSamplersUs);
+    rex::perf::ScopedCounterTimer samplers_stage_timer(rex::perf::CounterId::kDrawStageSamplersUs);
 
     // Obtain the samplers. Note that the bindings don't depend on the shader
     // modification, so if on the second iteration of this loop it becomes
@@ -4511,8 +4500,7 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
   {
     uint64_t texture_bindings_generation = texture_cache_->texture_bindings_generation();
     texture_bindings_unchanged_this_draw_ =
-        draw_samplers_reused &&
-        draw_binding_texture_generation_ == texture_bindings_generation;
+        draw_samplers_reused && draw_binding_texture_generation_ == texture_bindings_generation;
     draw_binding_texture_generation_ = texture_bindings_generation;
     if (draw_samplers_reused) {
       rex::perf::cpu_profile::CountEvent(rex::perf::CounterId::kDrawSamplerFastPathDraws);
@@ -4556,9 +4544,8 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
     bool pipeline_is_placeholder = false;
     // Reload the current handle state to observe async hot-swap completions that
     // may happen between pipeline configuration and binding.
-    pipeline_cache_->GetPipelineAndLayoutByHandle(pipeline_handle, pipeline,
-                                                  pipeline_layout_provider,
-                                                  &pipeline_is_placeholder);
+    pipeline_cache_->GetPipelineAndLayoutByHandle(
+        pipeline_handle, pipeline, pipeline_layout_provider, &pipeline_is_placeholder);
     if (REXCVAR_GET(async_shader_compilation) && pipeline_is_placeholder) {
       frame_used_async_placeholder_pipeline_ = true;
       if (debug_log_frame) {
@@ -4671,9 +4658,8 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
           uint32_t(edram_mode), rb_surface_info.surface_pitch, viewport_info.xy_extent[0],
           viewport_info.xy_extent[1], viewport_info.xy_offset[0], viewport_info.xy_offset[1],
           viewport_info.z_min, viewport_info.z_max, pa_sc_window_scissor_tl.tl_x,
-          pa_sc_window_scissor_tl.tl_y, pa_sc_window_scissor_br.br_x,
-          pa_sc_window_scissor_br.br_y, debug_team_profile_bg_texture_base,
-          debug_team_profile_bg_texture_length);
+          pa_sc_window_scissor_tl.tl_y, pa_sc_window_scissor_br.br_x, pa_sc_window_scissor_br.br_y,
+          debug_team_profile_bg_texture_base, debug_team_profile_bg_texture_length);
     }
   }
 
@@ -4768,7 +4754,8 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t 
           vertex_buffers_in_sync_[vfetch_index >> 6] |= vfetch_bit;
           continue;
         }
-        if (!shared_memory_->RequestRange(vfetch_constant.address << 2, vfetch_constant.size << 2)) {
+        if (!shared_memory_->RequestRange(vfetch_constant.address << 2,
+                                          vfetch_constant.size << 2)) {
           REXGPU_ERROR(
               "Failed to request vertex buffer at 0x{:08X} (size {}) in the shared "
               "memory",
@@ -5213,9 +5200,8 @@ bool VulkanCommandProcessor::IssueCopy() {
     return false;
   }
 
-  ReadbackResolveMode readback_mode =
-      ResolveAutoReadbackMode(GetReadbackResolveMode(REXCVAR_GET(vulkan_readback_resolve)),
-                              kernel_state_);
+  ReadbackResolveMode readback_mode = ResolveAutoReadbackMode(
+      GetReadbackResolveMode(REXCVAR_GET(vulkan_readback_resolve)), kernel_state_);
   const bool gameplay_state_active = IsGameplayStateActive(kernel_state_);
   // The app layer arms this around CPU screenshot grabs (Skate 3 photo flow);
   // resolves within its length bound must take the readback path regardless
@@ -5380,8 +5366,8 @@ bool VulkanCommandProcessor::DownscaleScaledResolveToSharedMemory(uint32_t start
     }
   }
 
-  VkDescriptorSet descriptor_set = AllocateSingleTransientDescriptor(
-      SingleTransientDescriptorLayout::kStorageBufferPairCompute);
+  VkDescriptorSet descriptor_set =
+      AllocateSingleTransientDescriptor(SingleTransientDescriptorLayout::kStorageBufferPairCompute);
   if (descriptor_set == VK_NULL_HANDLE) {
     return false;
   }
@@ -5396,8 +5382,8 @@ bool VulkanCommandProcessor::DownscaleScaledResolveToSharedMemory(uint32_t start
   // delivered content, everything above was 100% zeros). Mirrors the D3D12
   // path, which creates the source SRV at the resolve's own offset with a
   // small range; the shader receives only the intra-binding residual.
-  const VkDeviceSize source_offset_alignment = std::max(
-      vulkan_device->properties().minStorageBufferOffsetAlignment, VkDeviceSize(4));
+  const VkDeviceSize source_offset_alignment =
+      std::max(vulkan_device->properties().minStorageBufferOffsetAlignment, VkDeviceSize(4));
   const VkDeviceSize source_binding_offset =
       VkDeviceSize(scaled_start) & ~(source_offset_alignment - 1);
   const uint32_t source_offset_residual = uint32_t(scaled_start - source_binding_offset);
@@ -5448,11 +5434,10 @@ bool VulkanCommandProcessor::DownscaleScaledResolveToSharedMemory(uint32_t start
   constants.tile_count = tile_count;
   // Relative to the descriptor's binding offset (see buffer_infos[0] above).
   constants.source_offset_bytes = source_offset_residual;
-  constants.half_pixel_offset =
-      (REXCVAR_GET(readback_resolve_half_pixel_offset) &&
-       (constants.scale_x > 1 || constants.scale_y > 1))
-          ? 1u
-          : 0u;
+  constants.half_pixel_offset = (REXCVAR_GET(readback_resolve_half_pixel_offset) &&
+                                 (constants.scale_x > 1 || constants.scale_y > 1))
+                                    ? 1u
+                                    : 0u;
   deferred_command_buffer_.CmdVkPushConstants(resolve_downscale_pipeline_layout_,
                                               VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(constants),
                                               &constants);
@@ -5490,9 +5475,8 @@ bool VulkanCommandProcessor::DownscaleScaledResolveToSharedMemory(uint32_t start
     readback_copy.srcOffset = 0;
     readback_copy.dstOffset = 0;
     readback_copy.size = length_unscaled;
-    deferred_command_buffer_.CmdVkCopyBuffer(resolve_downscale_buffer_,
-                                             readback->buffers[readback_write_index], 1,
-                                             &readback_copy);
+    deferred_command_buffer_.CmdVkCopyBuffer(
+        resolve_downscale_buffer_, readback->buffers[readback_write_index], 1, &readback_copy);
     PushBufferMemoryBarrier(readback->buffers[readback_write_index], 0, length_unscaled,
                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
@@ -5562,19 +5546,17 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
     return true;
   }
 
-  ReadbackResolveMode readback_mode =
-      ResolveAutoReadbackMode(GetReadbackResolveMode(REXCVAR_GET(vulkan_readback_resolve)),
-                              kernel_state_);
+  ReadbackResolveMode readback_mode = ResolveAutoReadbackMode(
+      GetReadbackResolveMode(REXCVAR_GET(vulkan_readback_resolve)), kernel_state_);
   bool force_scaled_resolve_sync_only = false;
   bool force_scaled_resolve_cpu_copy = false;
   bool force_window_cpu_copy = false;
   if (readback_mode == ReadbackResolveMode::kDisabled) {
     constexpr uint32_t kImportSkaterPreviewResolveAddress = UINT32_C(0x04911000);
     constexpr uint32_t kImportSkaterPreviewResolveLength = UINT32_C(0x2D0000);
-    force_scaled_resolve_cpu_copy =
-        !IsGameplayStateActive(kernel_state_) && is_scaled &&
-        written_address == kImportSkaterPreviewResolveAddress &&
-        written_length == kImportSkaterPreviewResolveLength;
+    force_scaled_resolve_cpu_copy = !IsGameplayStateActive(kernel_state_) && is_scaled &&
+                                    written_address == kImportSkaterPreviewResolveAddress &&
+                                    written_length == kImportSkaterPreviewResolveLength;
     // Rate-limit the targeted copies: each one is a synchronous GPU drain
     // plus a multi-megabyte CPU copy, and menu flows that re-resolve the
     // preview target every frame (trick guide demo pages) issue hundreds
@@ -5584,8 +5566,7 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
     // deliberately NOT throttled (the display card composes from exact
     // frames).
     if (force_scaled_resolve_cpu_copy) {
-      const int32_t min_interval_ms =
-          REXCVAR_GET(native_render_targeted_readback_min_interval_ms);
+      const int32_t min_interval_ms = REXCVAR_GET(native_render_targeted_readback_min_interval_ms);
       if (min_interval_ms > 0) {
         static uint64_t s_last_targeted_copy_ms = 0;
         const uint64_t now_ms = rex::chrono::Clock::QueryHostUptimeMillis();
@@ -5603,8 +5584,8 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
     // framebuffer-sized resolves stay excluded.
     const int32_t force_readback_max_length =
         REXCVAR_GET(native_render_force_resolve_readback_max_length);
-    force_window_cpu_copy = force_readback_max_length > 0 &&
-                            written_length <= uint32_t(force_readback_max_length);
+    force_window_cpu_copy =
+        force_readback_max_length > 0 && written_length <= uint32_t(force_readback_max_length);
     if (!force_scaled_resolve_cpu_copy && !force_window_cpu_copy) {
       log_readback_decision("disabled-after-resolve", readback_mode);
       return true;
@@ -5644,16 +5625,14 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
     const uint32_t min_readback_address =
         uint32_t(std::max(0, REXCVAR_GET(vulkan_readback_resolve_min_address)));
     const uint64_t readback_end = uint64_t(written_address) + written_length;
-    if (written_address < min_readback_address ||
-        readback_end > uint32_t(max_readback_address)) {
+    if (written_address < min_readback_address || readback_end > uint32_t(max_readback_address)) {
       log_readback_decision("address-filter", readback_mode, false, false,
                             uint32_t(max_readback_address));
       if (REXCVAR_GET(vulkan_debug_log_frame_summaries_remaining) > 0) {
         REXGPU_WARN(
             "Vulkan resolve readback skipped by address filter: address={:08X}, length={:X}, "
             "window={:08X}-{:08X}",
-            written_address, written_length, min_readback_address,
-            uint32_t(max_readback_address));
+            written_address, written_length, min_readback_address, uint32_t(max_readback_address));
       }
       return true;
     }
@@ -5805,8 +5784,8 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
     // entirely above 0x20000000 read 100% zeros). Mirrors the D3D12 path,
     // which creates the source SRV at the resolve's own offset with a small
     // range; the shader receives only the intra-binding residual.
-    const VkDeviceSize source_offset_alignment = std::max(
-        vulkan_device->properties().minStorageBufferOffsetAlignment, VkDeviceSize(4));
+    const VkDeviceSize source_offset_alignment =
+        std::max(vulkan_device->properties().minStorageBufferOffsetAlignment, VkDeviceSize(4));
     const VkDeviceSize source_binding_offset =
         VkDeviceSize(scaled_start) & ~(source_offset_alignment - 1);
     const uint32_t source_offset_residual = uint32_t(scaled_start - source_binding_offset);
@@ -5926,8 +5905,7 @@ bool VulkanCommandProcessor::IssueCopy_ReadbackResolvePath() {
   }
 
   bool should_copy =
-      (!force_scaled_resolve_sync_only || force_scaled_resolve_cpu_copy ||
-       force_window_cpu_copy) &&
+      (!force_scaled_resolve_sync_only || force_scaled_resolve_cpu_copy || force_window_cpu_copy) &&
       ((readback_mode == ReadbackResolveMode::kSome) ? is_cache_miss : true);
   log_readback_decision(should_copy ? "copy-guest-memory" : "cache-hit-skip", readback_mode,
                         is_cache_miss, should_copy, uint32_t(resolve_key));
@@ -6075,17 +6053,14 @@ void VulkanCommandProcessor::ShutdownGpuTimestampResources() {
   const ui::vulkan::VulkanDevice::Functions& dfn = vulkan_device->functions();
   VkDevice device = vulkan_device->device();
 
-  if (gpu_timestamp_readback_mapping_ &&
-      gpu_timestamp_readback_memory_ != VK_NULL_HANDLE) {
+  if (gpu_timestamp_readback_mapping_ && gpu_timestamp_readback_memory_ != VK_NULL_HANDLE) {
     dfn.vkUnmapMemory(device, gpu_timestamp_readback_memory_);
   }
   gpu_timestamp_readback_mapping_ = nullptr;
   ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyBuffer, device,
                                          gpu_timestamp_readback_buffer_);
-  ui::vulkan::util::DestroyAndNullHandle(dfn.vkFreeMemory, device,
-                                         gpu_timestamp_readback_memory_);
-  ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyQueryPool, device,
-                                         gpu_timestamp_query_pool_);
+  ui::vulkan::util::DestroyAndNullHandle(dfn.vkFreeMemory, device, gpu_timestamp_readback_memory_);
+  ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyQueryPool, device, gpu_timestamp_query_pool_);
   gpu_timestamp_readback_memory_type_ = UINT32_MAX;
   gpu_timestamp_readback_memory_size_ = 0;
   gpu_timestamp_resources_available_ = false;
@@ -6096,17 +6071,16 @@ void VulkanCommandProcessor::ShutdownGpuTimestampResources() {
 }
 
 void VulkanCommandProcessor::BeginGpuTimestampFrame() {
-  const bool timestamp_diagnostics_enabled =
-      rex::perf::IsCaptureRecording() || REXCVAR_GET(vulkan_gpu_timestamp_buckets) ||
-      REXCVAR_GET(vulkan_gpu_timestamp_trace_frames) > 0;
+  const bool timestamp_diagnostics_enabled = rex::perf::IsCaptureRecording() ||
+                                             REXCVAR_GET(vulkan_gpu_timestamp_buckets) ||
+                                             REXCVAR_GET(vulkan_gpu_timestamp_trace_frames) > 0;
   gpu_timestamp_draws_enabled_ = timestamp_diagnostics_enabled;
   if (!gpu_timestamp_resources_available_ || gpu_timestamp_query_pool_ == VK_NULL_HANDLE) {
     return;
   }
 
-  const bool presenter_stats_enabled =
-      graphics_system_ && graphics_system_->presenter() &&
-      graphics_system_->presenter()->GuestFrameStatsEnabled();
+  const bool presenter_stats_enabled = graphics_system_ && graphics_system_->presenter() &&
+                                       graphics_system_->presenter()->GuestFrameStatsEnabled();
   if (!timestamp_diagnostics_enabled && !presenter_stats_enabled) {
     return;
   }
@@ -6130,10 +6104,8 @@ void VulkanCommandProcessor::BeginGpuTimestampFrame() {
 
   // The frame-level start/end pair is measured only while a visible overlay or
   // explicit timestamp diagnostic needs it.
-  const ui::vulkan::VulkanDevice::Properties& device_properties =
-      GetVulkanDevice()->properties();
-  if (!device_properties.timestampComputeAndGraphics ||
-      device_properties.timestampPeriod <= 0.0f) {
+  const ui::vulkan::VulkanDevice::Properties& device_properties = GetVulkanDevice()->properties();
+  if (!device_properties.timestampComputeAndGraphics || device_properties.timestampPeriod <= 0.0f) {
     return;
   }
 
@@ -6156,8 +6128,7 @@ void VulkanCommandProcessor::EndGpuTimestampFrame() {
   }
 
   if (frame.frame_start_query != UINT32_MAX) {
-    if (frame.active_bucket_valid &&
-        frame.query_count + 1 < kMaxGpuTimestampQueriesPerFrame) {
+    if (frame.active_bucket_valid && frame.query_count + 1 < kMaxGpuTimestampQueriesPerFrame) {
       frame.bucket_end_queries[frame.active_bucket_index] = frame.query_count++;
       deferred_command_buffer_.CmdVkWriteTimestamp(
           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, gpu_timestamp_query_pool_,
@@ -6228,11 +6199,11 @@ void VulkanCommandProcessor::ProcessGpuTimestampResults() {
     memory_range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     memory_range.memory = gpu_timestamp_readback_memory_;
     memory_range.offset = 0;
-    memory_range.size = std::min(
-        rex::round_up(VkDeviceSize(sizeof(uint64_t) * 2 * kMaxGpuTimestampQueriesPerFrame *
-                                   kMaxFramesInFlight),
-                      properties.nonCoherentAtomSize),
-        gpu_timestamp_readback_memory_size_);
+    memory_range.size =
+        std::min(rex::round_up(VkDeviceSize(sizeof(uint64_t) * 2 * kMaxGpuTimestampQueriesPerFrame *
+                                            kMaxFramesInFlight),
+                               properties.nonCoherentAtomSize),
+                 gpu_timestamp_readback_memory_size_);
     dfn.vkInvalidateMappedMemoryRanges(device, 1, &memory_range);
   }
 
@@ -6264,8 +6235,7 @@ void VulkanCommandProcessor::ProcessGpuTimestampResults() {
       int64_t elapsed_us = timestamp_delta_us(frame.frame_start_query, frame.frame_end_query);
       if (elapsed_us > 0) {
         frame_span_us = elapsed_us;
-        rex::perf::IncrementCounter(rex::perf::CounterId::kGpuCommandProcessorFrameUs,
-                                    elapsed_us);
+        rex::perf::IncrementCounter(rex::perf::CounterId::kGpuCommandProcessorFrameUs, elapsed_us);
         rex::perf::IncrementCounter(rex::perf::CounterId::kGpuTimestampedFrames);
         if (ui::Presenter* presenter = graphics_system_->presenter()) {
           presenter->SetGuestFrameGpuSpanMicroseconds(uint64_t(elapsed_us));
@@ -6312,14 +6282,13 @@ void VulkanCommandProcessor::ProcessGpuTimestampResults() {
       }
       int64_t elapsed_us = timestamp_delta_us(start_query, end_query);
       if (trace_this_frame && start_query < frame.query_count && end_query < frame.query_count) {
-        REXGPU_INFO("  [{}] {} start={} end={} dur={}{}", i,
-                    rex::perf::DrawBucketName(frame.buckets[i]),
-                    trace_ticks_to_us(timestamps[size_t(start_query) * 2]),
-                    trace_ticks_to_us(timestamps[size_t(end_query) * 2]), elapsed_us,
-                    (!timestamps[size_t(start_query) * 2 + 1] ||
-                     !timestamps[size_t(end_query) * 2 + 1])
-                        ? " UNAVAILABLE"
-                        : "");
+        REXGPU_INFO(
+            "  [{}] {} start={} end={} dur={}{}", i, rex::perf::DrawBucketName(frame.buckets[i]),
+            trace_ticks_to_us(timestamps[size_t(start_query) * 2]),
+            trace_ticks_to_us(timestamps[size_t(end_query) * 2]), elapsed_us,
+            (!timestamps[size_t(start_query) * 2 + 1] || !timestamps[size_t(end_query) * 2 + 1])
+                ? " UNAVAILABLE"
+                : "");
       }
       if (elapsed_us <= 0) {
         continue;
@@ -6399,10 +6368,9 @@ void VulkanCommandProcessor::ProcessGpuTimestampResults() {
           if (!total_us) {
             continue;
           }
-          breakdown += fmt::format(" {}={}({})",
-                                   rex::perf::DrawBucketName(rex::perf::DrawBucket(bucket)),
-                                   total_us / gpu_profile_frames_,
-                                   gpu_profile_bucket_n_[bucket] / gpu_profile_frames_);
+          breakdown += fmt::format(
+              " {}={}({})", rex::perf::DrawBucketName(rex::perf::DrawBucket(bucket)),
+              total_us / gpu_profile_frames_, gpu_profile_bucket_n_[bucket] / gpu_profile_frames_);
         }
         uint64_t span_avg_us = gpu_profile_span_us_ / gpu_profile_frames_;
         uint64_t sum_avg_us = buckets_sum_us / gpu_profile_frames_;
@@ -6443,8 +6411,7 @@ uint32_t VulkanCommandProcessor::BeginGpuTimestampedDraw(rex::perf::DrawBucket b
   if (frame.active_bucket_valid && frame.active_bucket == bucket) {
     return UINT32_MAX;
   }
-  if (frame.query_count + (frame.active_bucket_valid ? 2 : 1) >
-      kMaxGpuTimestampQueriesPerFrame) {
+  if (frame.query_count + (frame.active_bucket_valid ? 2 : 1) > kMaxGpuTimestampQueriesPerFrame) {
     return UINT32_MAX;
   }
 
@@ -6464,9 +6431,8 @@ uint32_t VulkanCommandProcessor::BeginGpuTimestampedDraw(rex::perf::DrawBucket b
   frame.buckets.push_back(bucket);
   frame.bucket_start_queries.push_back(start_query);
   frame.bucket_end_queries.push_back(UINT32_MAX);
-  deferred_command_buffer_.CmdVkWriteTimestamp(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                               gpu_timestamp_query_pool_,
-                                               frame.query_base + start_query);
+  deferred_command_buffer_.CmdVkWriteTimestamp(
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, gpu_timestamp_query_pool_, frame.query_base + start_query);
   return start_query;
 }
 
@@ -6688,8 +6654,7 @@ void VulkanCommandProcessor::WriteGuestOcclusionResult(uint32_t sample_count_add
 }
 
 void VulkanCommandProcessor::CheckSubmissionFenceAndDeviceLoss(uint64_t await_submission) {
-  rex::perf::ScopedCounterTimer check_fence_timer(
-      rex::perf::CounterId::kCpuD3D12CheckFenceUs);
+  rex::perf::ScopedCounterTimer check_fence_timer(rex::perf::CounterId::kCpuD3D12CheckFenceUs);
 
   // Only report once, no need to retry a wait that won't succeed anyway.
   if (device_lost_) {
@@ -6719,22 +6684,20 @@ void VulkanCommandProcessor::CheckSubmissionFenceAndDeviceLoss(uint64_t await_su
     // order."
     VkResult wait_result;
     {
-      rex::perf::ScopedCounterTimer fence_wait_timer(
-          rex::perf::CounterId::kCpuD3D12FenceWaitUs);
+      rex::perf::ScopedCounterTimer fence_wait_timer(rex::perf::CounterId::kCpuD3D12FenceWaitUs);
       rex::perf::ScopedCounterTimer gpu_thread_wait_timer(
           rex::perf::CounterId::kGpuThreadFenceWaitUs, true);
       // Also reported through the presenter so the FPS overlay can show the
       // blocked time in builds without perf counters - cheap around a
       // blocking wait.
       const std::chrono::steady_clock::time_point wait_start = std::chrono::steady_clock::now();
-      wait_result =
-          dfn.vkWaitForFences(device, uint32_t(await_submission - submission_completed_),
-                              submissions_in_flight_fences_.data(), VK_TRUE, UINT64_MAX);
+      wait_result = dfn.vkWaitForFences(device, uint32_t(await_submission - submission_completed_),
+                                        submissions_in_flight_fences_.data(), VK_TRUE, UINT64_MAX);
       if (ui::Presenter* wait_presenter = graphics_system_->presenter()) {
-        wait_presenter->AddGuestFrameWaitMicroseconds(uint64_t(
-            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() -
-                                                                  wait_start)
-                .count()));
+        wait_presenter->AddGuestFrameWaitMicroseconds(
+            uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(
+                         std::chrono::steady_clock::now() - wait_start)
+                         .count()));
       }
     }
     if (wait_result == VK_SUCCESS) {
@@ -6771,8 +6734,7 @@ void VulkanCommandProcessor::CheckSubmissionFenceAndDeviceLoss(uint64_t await_su
     return;
   }
 
-  rex::perf::ScopedCounterTimer fence_reclaim_timer(
-      rex::perf::CounterId::kCpuD3D12FenceReclaimUs);
+  rex::perf::ScopedCounterTimer fence_reclaim_timer(rex::perf::CounterId::kCpuD3D12FenceReclaimUs);
 
   // Reclaim fences.
   fences_free_.reserve(fences_free_.size() + fences_awaited);
@@ -8739,8 +8701,8 @@ bool VulkanCommandProcessor::UpdateBindings(const VulkanShader* vertex_shader,
     // The constants set index uses push descriptors - record the push when
     // its contents or the command buffer binding state changed, and exclude
     // it from the regular vkCmdBindDescriptorSets ranges.
-    constexpr uint32_t kConstantsDescriptorBit =
-        UINT32_C(1) << SpirvShaderTranslator::kDescriptorSetConstants;
+    constexpr uint32_t kConstantsDescriptorBit = UINT32_C(1)
+                                                 << SpirvShaderTranslator::kDescriptorSetConstants;
     if (!(current_graphics_descriptor_sets_bound_up_to_date_ & kConstantsDescriptorBit)) {
       deferred_command_buffer_.CmdVkPushUniformBufferDescriptorSet(
           VK_PIPELINE_BIND_POINT_GRAPHICS,

@@ -109,11 +109,9 @@ void SDLInputDriver::OnWindowAvailable(rex::ui::Window* window) {
           mappings_path = rex::filesystem::GetAppRootFolder() / mappings_path;
         }
         if (!std::filesystem::exists(mappings_path)) {
-          REXLOG_WARN("SDL GameControllerDB: file '{}' does not exist.",
-                      mappings_path.string());
+          REXLOG_WARN("SDL GameControllerDB: file '{}' does not exist.", mappings_path.string());
         } else {
-          auto mappings_result =
-              SDL_AddGamepadMappingsFromFile(mappings_path.string().c_str());
+          auto mappings_result = SDL_AddGamepadMappingsFromFile(mappings_path.string().c_str());
           if (mappings_result < 0) {
             REXLOG_ERROR("SDL GameControllerDB: error loading file '{}': {}.",
                          mappings_path.string(), mappings_result);

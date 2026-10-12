@@ -215,8 +215,7 @@ void XmaContext::ClearLocked(XMA_CONTEXT_DATA* data) {
   data->input_buffer_1_valid = 0;
   data->output_buffer_valid = 0;
 
-  data->input_buffer_read_offset =
-      REXCVAR_GET(xma_use_old_decoder) ? 0 : kBitsPerPacketHeader;
+  data->input_buffer_read_offset = REXCVAR_GET(xma_use_old_decoder) ? 0 : kBitsPerPacketHeader;
   data->output_buffer_read_offset = 0;
   data->output_buffer_write_offset = 0;
   // NOTE: do NOT zero the output ring contents here. The game clears
@@ -350,8 +349,7 @@ kPacketHandle XmaContext::GetPacketHandle(XMA_CONTEXT_DATA* data, uint32_t buffe
     return result;
   }
 
-  const uint32_t packet_count =
-      data->GetInputBufferPacketCount(static_cast<uint8_t>(buffer_index));
+  const uint32_t packet_count = data->GetInputBufferPacketCount(static_cast<uint8_t>(buffer_index));
   if (packet_index >= packet_count) {
     REXAPU_ERROR("XmaContext {}: Packet {} is outside buffer {} packet count {}", id(),
                  packet_index, buffer_index, packet_count);
@@ -402,9 +400,9 @@ uint32_t XmaContext::GetNextPacketReadOffset(XMA_CONTEXT_DATA* data, uint32_t ne
 
   const uint32_t buffer_address =
       data->GetInputBufferAddress(static_cast<uint8_t>(packet.buffer_index_));
-  return GetNextPacketReadOffset(memory()->TranslatePhysical(buffer_address), packet.packet_index_,
-                                 data->GetInputBufferPacketCount(
-                                     static_cast<uint8_t>(packet.buffer_index_)));
+  return GetNextPacketReadOffset(
+      memory()->TranslatePhysical(buffer_address), packet.packet_index_,
+      data->GetInputBufferPacketCount(static_cast<uint8_t>(packet.buffer_index_)));
 }
 
 memory::RingBuffer XmaContext::PrepareOutputRingBuffer(XMA_CONTEXT_DATA* data) {
@@ -892,8 +890,7 @@ bool XmaContext::WorkOldFrameDecoder() {
   return true;
 }
 
-bool XmaContext::TrySetupNextLoopOld(XMA_CONTEXT_DATA* data,
-                                     bool ignore_input_buffer_offset) {
+bool XmaContext::TrySetupNextLoopOld(XMA_CONTEXT_DATA* data, bool ignore_input_buffer_offset) {
   if (data->loop_count > 0 && data->loop_start < data->loop_end &&
       (ignore_input_buffer_offset || data->input_buffer_read_offset >= data->loop_end)) {
     data->input_buffer_read_offset = data->loop_start;
@@ -905,8 +902,7 @@ bool XmaContext::TrySetupNextLoopOld(XMA_CONTEXT_DATA* data,
   return false;
 }
 
-bool XmaContext::ValidFrameOffsetOld(uint8_t* block, size_t size_bytes,
-                                     size_t frame_offset_bits) {
+bool XmaContext::ValidFrameOffsetOld(uint8_t* block, size_t size_bytes, size_t frame_offset_bits) {
   const int packet_num = GetFramePacketNumberOld(block, size_bytes, frame_offset_bits);
   if (packet_num < 0) {
     return false;
@@ -973,8 +969,7 @@ size_t XmaContext::GetNextFrameOld(uint8_t* block, size_t size_bytes, size_t bit
   return bit_offset;
 }
 
-int XmaContext::GetFramePacketNumberOld(uint8_t* block, size_t size_bytes,
-                                        size_t bit_offset) {
+int XmaContext::GetFramePacketNumberOld(uint8_t* block, size_t size_bytes, size_t bit_offset) {
   (void)block;
   const size_t size_bits = size_bytes * 8;
   if (bit_offset >= size_bits) {
@@ -1067,12 +1062,10 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     return;
   }
 
-  uint8_t* in0 = data->input_buffer_0_valid
-                     ? memory()->TranslatePhysical(data->input_buffer_0_ptr)
-                     : nullptr;
-  uint8_t* in1 = data->input_buffer_1_valid
-                     ? memory()->TranslatePhysical(data->input_buffer_1_ptr)
-                     : nullptr;
+  uint8_t* in0 =
+      data->input_buffer_0_valid ? memory()->TranslatePhysical(data->input_buffer_0_ptr) : nullptr;
+  uint8_t* in1 =
+      data->input_buffer_1_valid ? memory()->TranslatePhysical(data->input_buffer_1_ptr) : nullptr;
   uint8_t* current_input_buffer = data->current_buffer ? in1 : in0;
   if (!current_input_buffer) {
     REXAPU_ERROR("XmaContext {} old: input buffer pointer is invalid", id());
@@ -1093,8 +1086,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
 
   const size_t input_buffer_0_size = data->input_buffer_0_packet_count * kBytesPerPacket;
   const size_t input_buffer_1_size = data->input_buffer_1_packet_count * kBytesPerPacket;
-  const size_t current_input_size = data->current_buffer ? input_buffer_1_size
-                                                        : input_buffer_0_size;
+  const size_t current_input_size =
+      data->current_buffer ? input_buffer_1_size : input_buffer_0_size;
   const size_t current_input_packet_count = current_input_size / kBytesPerPacket;
   const bool is_streaming =
       data->input_buffer_0_packet_count == 1 && data->input_buffer_1_packet_count == 1;
@@ -1135,9 +1128,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     }
 
     if (old_packets_skip_ > 0) {
-      packet_idx =
-          GetFramePacketNumberOld(current_input_buffer, current_input_size,
-                                  data->input_buffer_read_offset);
+      packet_idx = GetFramePacketNumberOld(current_input_buffer, current_input_size,
+                                           data->input_buffer_read_offset);
       if (packet_idx < 0) {
         return;
       }
@@ -1162,9 +1154,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     }
 
     if (old_split_frame_len_) {
-      packet_idx =
-          GetFramePacketNumberOld(current_input_buffer, current_input_size,
-                                  data->input_buffer_read_offset);
+      packet_idx = GetFramePacketNumberOld(current_input_buffer, current_input_size,
+                                           data->input_buffer_read_offset);
       if (packet_idx < 0) {
         return;
       }
@@ -1181,8 +1172,7 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
                         ((old_split_frame_len_partial_ + old_split_frame_padding_start_) / 8),
                     kBitsPerFrameHeader - old_split_frame_len_partial_);
         stream.SetOffset(offset);
-        BitStream slen(xma_frame_.data() + 1,
-                       kBitsPerFrameHeader + old_split_frame_padding_start_);
+        BitStream slen(xma_frame_.data() + 1, kBitsPerFrameHeader + old_split_frame_padding_start_);
         slen.Advance(old_split_frame_padding_start_);
         old_split_frame_len_ = static_cast<uint32_t>(slen.Read(kBitsPerFrameHeader));
       }
@@ -1192,9 +1182,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
                   old_split_frame_len_ - old_split_frame_len_partial_);
     } else {
       if (data->input_buffer_read_offset % kBitsPerPacket == 0) {
-        const int packet_number =
-            GetFramePacketNumberOld(current_input_buffer, current_input_size,
-                                    data->input_buffer_read_offset);
+        const int packet_number = GetFramePacketNumberOld(current_input_buffer, current_input_size,
+                                                          data->input_buffer_read_offset);
         if (packet_number < 0) {
           return;
         }
@@ -1216,9 +1205,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
         return;
       }
 
-      std::tie(packet_idx, frame_idx) =
-          GetFrameNumberOld(current_input_buffer, current_input_size,
-                            data->input_buffer_read_offset);
+      std::tie(packet_idx, frame_idx) = GetFrameNumberOld(current_input_buffer, current_input_size,
+                                                          data->input_buffer_read_offset);
       if (packet_idx < 0 || frame_idx < 0) {
         return;
       }
@@ -1270,16 +1258,15 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     }
 
     av_packet_->data = xma_frame_.data();
-    av_packet_->size = static_cast<int>(
-        1 + ((old_split_frame_padding_start_ + old_split_frame_len_) / 8) +
-        (((old_split_frame_padding_start_ + old_split_frame_len_) % 8) ? 1 : 0));
+    av_packet_->size =
+        static_cast<int>(1 + ((old_split_frame_padding_start_ + old_split_frame_len_) / 8) +
+                         (((old_split_frame_padding_start_ + old_split_frame_len_) % 8) ? 1 : 0));
     const auto padding_end =
         av_packet_->size * 8 - (8 + old_split_frame_padding_start_ + old_split_frame_len_);
     if (padding_end >= 8) {
       return;
     }
-    xma_frame_[0] =
-        ((old_split_frame_padding_start_ & 7) << 5) | ((padding_end & 7) << 2);
+    xma_frame_[0] = ((old_split_frame_padding_start_ & 7) << 5) | ((padding_end & 7) << 2);
 
     old_split_frame_len_ = 0;
     old_split_frame_len_partial_ = 0;
@@ -1310,8 +1297,8 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     data->output_buffer_write_offset = output_rb.write_offset() / kOutputBytesPerBlock;
 
     uint32_t offset = std::max(kBitsPerPacketHeader, data->input_buffer_read_offset);
-    offset = static_cast<uint32_t>(
-        GetNextFrameOld(current_input_buffer, current_input_size, offset));
+    offset =
+        static_cast<uint32_t>(GetNextFrameOld(current_input_buffer, current_input_size, offset));
 
     if (frame_idx + 1 >= frame_count) {
       old_packets_skip_ = xma::GetPacketSkipCount(packet) + 1;

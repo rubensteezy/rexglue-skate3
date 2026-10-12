@@ -32,8 +32,7 @@ void FpsOverlayDialog::OnDraw(ImGuiIO& io) {
   if (ImGui::Begin("##fps_overlay", nullptr,
                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                        ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoSavedSettings |
-                       ImGuiWindowFlags_NoFocusOnAppearing |
-                       ImGuiWindowFlags_AlwaysAutoResize)) {
+                       ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_AlwaysAutoResize)) {
     if (stats.frame_count > 0 && stats.fps > 0.0) {
       ImGui::Text("%.0f FPS", stats.fps);
       ImGui::PushFont(nullptr, 14.0f);

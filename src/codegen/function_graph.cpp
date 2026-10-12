@@ -904,7 +904,8 @@ void FunctionGraph::setSymbolPrefix(std::string prefix) {
   symbolPrefix_ = std::move(prefix);
 }
 
-std::string FunctionGraph::makeSymbolName(std::string_view name, FunctionAuthority authority) const {
+std::string FunctionGraph::makeSymbolName(std::string_view name,
+                                          FunctionAuthority authority) const {
   if (authority == FunctionAuthority::IMPORT || symbolPrefix_.empty()) {
     return std::string(name);
   }
@@ -969,8 +970,8 @@ void FunctionGraph::addUnresolvedJumpToFunction(uint32_t entry, uint32_t site, u
   if (!isCall && chunkParent(target) != 0 && HasEmittedBlockContaining(node, target)) {
     node->addLabel(target);
     REXCODEGEN_TRACE(
-        "FunctionGraph: resolved 0x{:08X}->0x{:08X} as emitted chunk label in 0x{:08X}",
-        site, target, entry);
+        "FunctionGraph: resolved 0x{:08X}->0x{:08X} as emitted chunk label in 0x{:08X}", site,
+        target, entry);
     return;
   }
 

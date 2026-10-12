@@ -63,20 +63,34 @@ namespace rex::input {
 namespace {
 
 uint16_t ChordButtonFromToken(std::string_view token) {
-  if (token == "a") return X_INPUT_GAMEPAD_A;
-  if (token == "b") return X_INPUT_GAMEPAD_B;
-  if (token == "x") return X_INPUT_GAMEPAD_X;
-  if (token == "y") return X_INPUT_GAMEPAD_Y;
-  if (token == "lb") return X_INPUT_GAMEPAD_LEFT_SHOULDER;
-  if (token == "rb") return X_INPUT_GAMEPAD_RIGHT_SHOULDER;
-  if (token == "l3") return X_INPUT_GAMEPAD_LEFT_THUMB;
-  if (token == "r3") return X_INPUT_GAMEPAD_RIGHT_THUMB;
-  if (token == "back" || token == "select" || token == "view") return X_INPUT_GAMEPAD_BACK;
-  if (token == "start" || token == "menu") return X_INPUT_GAMEPAD_START;
-  if (token == "dpad_up") return X_INPUT_GAMEPAD_DPAD_UP;
-  if (token == "dpad_down") return X_INPUT_GAMEPAD_DPAD_DOWN;
-  if (token == "dpad_left") return X_INPUT_GAMEPAD_DPAD_LEFT;
-  if (token == "dpad_right") return X_INPUT_GAMEPAD_DPAD_RIGHT;
+  if (token == "a")
+    return X_INPUT_GAMEPAD_A;
+  if (token == "b")
+    return X_INPUT_GAMEPAD_B;
+  if (token == "x")
+    return X_INPUT_GAMEPAD_X;
+  if (token == "y")
+    return X_INPUT_GAMEPAD_Y;
+  if (token == "lb")
+    return X_INPUT_GAMEPAD_LEFT_SHOULDER;
+  if (token == "rb")
+    return X_INPUT_GAMEPAD_RIGHT_SHOULDER;
+  if (token == "l3")
+    return X_INPUT_GAMEPAD_LEFT_THUMB;
+  if (token == "r3")
+    return X_INPUT_GAMEPAD_RIGHT_THUMB;
+  if (token == "back" || token == "select" || token == "view")
+    return X_INPUT_GAMEPAD_BACK;
+  if (token == "start" || token == "menu")
+    return X_INPUT_GAMEPAD_START;
+  if (token == "dpad_up")
+    return X_INPUT_GAMEPAD_DPAD_UP;
+  if (token == "dpad_down")
+    return X_INPUT_GAMEPAD_DPAD_DOWN;
+  if (token == "dpad_left")
+    return X_INPUT_GAMEPAD_DPAD_LEFT;
+  if (token == "dpad_right")
+    return X_INPUT_GAMEPAD_DPAD_RIGHT;
   return 0;
 }
 
@@ -372,8 +386,8 @@ bool InputSystem::GetUiGamepadState(X_INPUT_GAMEPAD* out_gamepad) {
         continue;
       }
       any = true;
-      merged.buttons = static_cast<uint16_t>(merged.buttons) |
-                       static_cast<uint16_t>(state.gamepad.buttons);
+      merged.buttons =
+          static_cast<uint16_t>(merged.buttons) | static_cast<uint16_t>(state.gamepad.buttons);
       merged.left_trigger = std::max(merged.left_trigger, state.gamepad.left_trigger);
       merged.right_trigger = std::max(merged.right_trigger, state.gamepad.right_trigger);
       merged.thumb_lx = merge_axis(merged.thumb_lx, state.gamepad.thumb_lx);

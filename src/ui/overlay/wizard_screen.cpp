@@ -111,8 +111,7 @@ void DrawAuroraBackdrop(ImDrawList* dl, ImVec2 display, float t) {
       const float x0 = display.x * float(gx) / kGridX;
       const float x1 = display.x * float(gx + 1) / kGridX;
       dl->AddRectFilledMultiColor(ImVec2(x0, y0), ImVec2(x1, y1), corners[gx][row ^ 1],
-                                  corners[gx + 1][row ^ 1], corners[gx + 1][row],
-                                  corners[gx][row]);
+                                  corners[gx + 1][row ^ 1], corners[gx + 1][row], corners[gx][row]);
     }
   }
 }
@@ -128,8 +127,8 @@ float Snap(float value) {
   return std::floor(value + 0.5f);
 }
 
-void AddTextVCentered(ImDrawList* dl, ImFont* font, float size, float x, float center_y,
-                      ImU32 col, const char* text) {
+void AddTextVCentered(ImDrawList* dl, ImFont* font, float size, float x, float center_y, ImU32 col,
+                      const char* text) {
   ImVec2 extent = font->CalcTextSizeA(size, FLT_MAX, 0.0f, text);
   dl->AddText(font, size, ImVec2(Snap(x), Snap(center_y - extent.y * 0.5f)), col, text);
 }
@@ -217,8 +216,7 @@ void DrawFocusHighlight(ImDrawList* dl, ImVec2 p_min, ImVec2 p_max, float s) {
 }
 
 // Greedy word wrap; returns [begin, end) ranges into text, one per line.
-std::vector<std::pair<const char*, const char*>> WrapLines(ImFont* font, float size,
-                                                           float wrap_w,
+std::vector<std::pair<const char*, const char*>> WrapLines(ImFont* font, float size, float wrap_w,
                                                            const std::string& text) {
   std::vector<std::pair<const char*, const char*>> lines;
   const char* p = text.c_str();
@@ -374,8 +372,8 @@ int DrawWizardScreen(ImGuiDrawer* drawer, ImGuiIO& io, const WizardScreenSpec& s
   // min after max: on very short windows the footer bound wins over the
   // keep-the-title-visible bound (std::clamp would be UB with inverted
   // bounds).
-  const float col_y = Snap(std::min(
-      std::max((display.y - total_h) * 0.5f, (98.0f + 74.0f) * s), content_bottom - total_h));
+  const float col_y = Snap(std::min(std::max((display.y - total_h) * 0.5f, (98.0f + 74.0f) * s),
+                                    content_bottom - total_h));
 
   // ---- Title ----
   dl->AddText(bold, title_size, ImVec2(col_x, Snap(col_y - 74.0f * s)), kColText, spec.title);
@@ -406,10 +404,10 @@ int DrawWizardScreen(ImGuiDrawer* drawer, ImGuiIO& io, const WizardScreenSpec& s
         const std::string line(begin, end);
         // Center each line's glyph box within its line slot (CSS line-height
         // behavior); top-anchoring reads visibly high in the panel.
-        dl->AddText(para_font, desc_size,
-                    ImVec2(Snap(col_x + panel_pad),
-                           Snap(text_y + (desc_line_h - desc_size) * 0.5f)),
-                    col, line.c_str());
+        dl->AddText(
+            para_font, desc_size,
+            ImVec2(Snap(col_x + panel_pad), Snap(text_y + (desc_line_h - desc_size) * 0.5f)), col,
+            line.c_str());
         text_y += desc_line_h;
       }
       text_y += para_gap;
@@ -474,11 +472,10 @@ int DrawWizardScreen(ImGuiDrawer* drawer, ImGuiIO& io, const WizardScreenSpec& s
     dl->AddRectFilled(ImVec2(tx0, Snap(cy - 3.0f * s)), ImVec2(tx1, Snap(cy + 3.0f * s)),
                       IM_COL32(0, 0, 0, 46));
     if (spec.progress_copied > 0 && spec.progress_total > 0) {
-      const float frac = std::clamp(
-          float(double(spec.progress_copied) / double(spec.progress_total)), 0.0f, 1.0f);
+      const float frac =
+          std::clamp(float(double(spec.progress_copied) / double(spec.progress_total)), 0.0f, 1.0f);
       dl->AddRectFilled(ImVec2(tx0, Snap(cy - 3.0f * s)),
-                        ImVec2(Snap(tx0 + (tx1 - tx0) * frac), Snap(cy + 3.0f * s)),
-                        kColInteract);
+                        ImVec2(Snap(tx0 + (tx1 - tx0) * frac), Snap(cy + 3.0f * s)), kColInteract);
     } else {
       // No bytes yet (connecting / spinning up): an indeterminate marching
       // band, so a slow first response still reads as activity rather than a
@@ -521,8 +518,8 @@ int DrawWizardScreen(ImGuiDrawer* drawer, ImGuiIO& io, const WizardScreenSpec& s
         dl->AddRectFilled(ImVec2(col_x, y0), ImVec2(col_x + col_w, y1),
                           hovered ? kColPanelHover : kColPanel);
         dl->AddRect(ImVec2(col_x, y0), ImVec2(col_x + col_w, y1), kColPanelBorder);
-        AddTextVCentered(dl, bold_ol, label_size, col_x + 18.0f * s, (y0 + y1) * 0.5f,
-                         kColRowText, spec.actions[i].c_str());
+        AddTextVCentered(dl, bold_ol, label_size, col_x + 18.0f * s, (y0 + y1) * 0.5f, kColRowText,
+                         spec.actions[i].c_str());
       }
       y += row_h + row_gap;
     }
@@ -569,8 +566,8 @@ int DrawWizardScreen(ImGuiDrawer* drawer, ImGuiIO& io, const WizardScreenSpec& s
       const float cy = legend_y + chip_h * 0.5f;
       x = Snap(x);
       const float chip_w = Snap(glyph_extent.x + 18.0f * fs);
-      DrawHardRoundedFill(dl, ImVec2(x, legend_y), ImVec2(x + chip_w, legend_y + chip_h),
-                          4.0f * fs, kColLegendChip);
+      DrawHardRoundedFill(dl, ImVec2(x, legend_y), ImVec2(x + chip_w, legend_y + chip_h), 4.0f * fs,
+                          kColLegendChip);
       AddTextCenteredCap(dl, bold_ol, glyph_size, ImVec2(x + chip_w * 0.5f, cy), kColLegendText,
                          glyph.glyph);
       x += chip_w + 8.0f * fs;

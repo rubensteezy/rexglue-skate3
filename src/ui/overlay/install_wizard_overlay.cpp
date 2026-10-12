@@ -135,8 +135,7 @@ void InstallWizardDialog::OnDraw(ImGuiIO& io) {
     spec.actions.push_back("Start Game");
   }
 
-  const int activated =
-      DrawWizardScreen(imgui_drawer(), io, spec, focus_index_, highlight_anim_y_);
+  const int activated = DrawWizardScreen(imgui_drawer(), io, spec, focus_index_, highlight_anim_y_);
   if (run_complete) {
     auto complete = std::move(complete_);
     Close();

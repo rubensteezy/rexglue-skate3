@@ -45,7 +45,8 @@ REXCVAR_DEFINE_STRING(keybind_lstick_up, "W", "Input/Keybinds/Controller", "Left
 REXCVAR_DEFINE_STRING(keybind_lstick_down, "S", "Input/Keybinds/Controller", "Left stick down");
 REXCVAR_DEFINE_STRING(keybind_lstick_left, "A", "Input/Keybinds/Controller", "Left stick left");
 REXCVAR_DEFINE_STRING(keybind_lstick_right, "D", "Input/Keybinds/Controller", "Left stick right");
-REXCVAR_DEFINE_STRING(keybind_lstick_press, "Shift", "Input/Keybinds/Controller", "Left stick press");
+REXCVAR_DEFINE_STRING(keybind_lstick_press, "Shift", "Input/Keybinds/Controller",
+                      "Left stick press");
 REXCVAR_DEFINE_STRING(keybind_rstick_up, "", "Input/Keybinds/Controller", "Right stick up");
 REXCVAR_DEFINE_STRING(keybind_rstick_down, "", "Input/Keybinds/Controller", "Right stick down");
 REXCVAR_DEFINE_STRING(keybind_rstick_left, "", "Input/Keybinds/Controller", "Right stick left");
@@ -293,9 +294,8 @@ X_RESULT MnkInputDriver::GetDeviceState(DeviceId id, X_INPUT_STATE* out_state) {
 
   // Mouse look is opt in. Without this gate, keyboard input alone would hide
   // and lock the cursor, breaking the ImGui overlays.
-  QueueMouseCaptureUpdate(IsEnabled() && REXCVAR_GET(mnk_mouse) &&
-                          REXCVAR_GET(mnk_capture_mouse) && IsMouseLookActive() && has_focus_ &&
-                          is_active());
+  QueueMouseCaptureUpdate(IsEnabled() && REXCVAR_GET(mnk_mouse) && REXCVAR_GET(mnk_capture_mouse) &&
+                          IsMouseLookActive() && has_focus_ && is_active());
 
   if (!is_active() || !has_focus_) {
     {
@@ -313,18 +313,31 @@ X_RESULT MnkInputDriver::GetDeviceState(DeviceId id, X_INPUT_STATE* out_state) {
 
   std::lock_guard lock(state_mutex_);
 
-  const uint8_t ignored_mods = BareBoundModifiers({
-      REXCVAR_GET(keybind_a), REXCVAR_GET(keybind_b), REXCVAR_GET(keybind_x),
-      REXCVAR_GET(keybind_y), REXCVAR_GET(keybind_left_shoulder),
-      REXCVAR_GET(keybind_right_shoulder), REXCVAR_GET(keybind_lstick_press),
-      REXCVAR_GET(keybind_rstick_press), REXCVAR_GET(keybind_back), REXCVAR_GET(keybind_start),
-      REXCVAR_GET(keybind_guide), REXCVAR_GET(keybind_dpad_up), REXCVAR_GET(keybind_dpad_down),
-      REXCVAR_GET(keybind_dpad_left), REXCVAR_GET(keybind_dpad_right),
-      REXCVAR_GET(keybind_left_trigger), REXCVAR_GET(keybind_right_trigger),
-      REXCVAR_GET(keybind_lstick_up), REXCVAR_GET(keybind_lstick_down),
-      REXCVAR_GET(keybind_lstick_left), REXCVAR_GET(keybind_lstick_right),
-      REXCVAR_GET(keybind_rstick_up), REXCVAR_GET(keybind_rstick_down),
-      REXCVAR_GET(keybind_rstick_left), REXCVAR_GET(keybind_rstick_right)});
+  const uint8_t ignored_mods = BareBoundModifiers({REXCVAR_GET(keybind_a),
+                                                   REXCVAR_GET(keybind_b),
+                                                   REXCVAR_GET(keybind_x),
+                                                   REXCVAR_GET(keybind_y),
+                                                   REXCVAR_GET(keybind_left_shoulder),
+                                                   REXCVAR_GET(keybind_right_shoulder),
+                                                   REXCVAR_GET(keybind_lstick_press),
+                                                   REXCVAR_GET(keybind_rstick_press),
+                                                   REXCVAR_GET(keybind_back),
+                                                   REXCVAR_GET(keybind_start),
+                                                   REXCVAR_GET(keybind_guide),
+                                                   REXCVAR_GET(keybind_dpad_up),
+                                                   REXCVAR_GET(keybind_dpad_down),
+                                                   REXCVAR_GET(keybind_dpad_left),
+                                                   REXCVAR_GET(keybind_dpad_right),
+                                                   REXCVAR_GET(keybind_left_trigger),
+                                                   REXCVAR_GET(keybind_right_trigger),
+                                                   REXCVAR_GET(keybind_lstick_up),
+                                                   REXCVAR_GET(keybind_lstick_down),
+                                                   REXCVAR_GET(keybind_lstick_left),
+                                                   REXCVAR_GET(keybind_lstick_right),
+                                                   REXCVAR_GET(keybind_rstick_up),
+                                                   REXCVAR_GET(keybind_rstick_down),
+                                                   REXCVAR_GET(keybind_rstick_left),
+                                                   REXCVAR_GET(keybind_rstick_right)});
 
   uint16_t buttons = 0;
   if (IsBindPressed(key_down_, REXCVAR_GET(keybind_a), ignored_mods))
@@ -359,7 +372,8 @@ X_RESULT MnkInputDriver::GetDeviceState(DeviceId id, X_INPUT_STATE* out_state) {
     buttons |= X_INPUT_GAMEPAD_DPAD_RIGHT;
 
   uint8_t lt = IsBindPressed(key_down_, REXCVAR_GET(keybind_left_trigger), ignored_mods) ? 0xFF : 0;
-  uint8_t rt = IsBindPressed(key_down_, REXCVAR_GET(keybind_right_trigger), ignored_mods) ? 0xFF : 0;
+  uint8_t rt =
+      IsBindPressed(key_down_, REXCVAR_GET(keybind_right_trigger), ignored_mods) ? 0xFF : 0;
 
   int32_t lx = 0;
   int32_t ly = 0;

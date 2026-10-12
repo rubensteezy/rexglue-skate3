@@ -327,8 +327,8 @@ void BuilderContext::emit_conditional_branch(bool not_, std::string_view cond) {
           println("\t}}");
         } else {
           REXCODEGEN_ERROR(
-              "Unresolved conditional branch to 0x{:08X} from 0x{:08X} (no CallTarget)",
-              target, base);
+              "Unresolved conditional branch to 0x{:08X} from 0x{:08X} (no CallTarget)", target,
+              base);
           println("\tif ({}{}.{}) REX_FATAL(\"Unresolved branch from 0x{:08X} to 0x{:08X}\");",
                   not_ ? "!" : "", cr(insn.operands[0]), cond, base, target);
         }

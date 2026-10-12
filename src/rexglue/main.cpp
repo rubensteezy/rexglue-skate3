@@ -89,8 +89,7 @@ int main(int argc, char** argv) {
 
   std::string dump_xex_path;
   std::string dump_output_dir;
-  auto* dump_xex =
-      app.add_subcommand("dump-xex", "Load, decrypt/decompress and dump a XEX image");
+  auto* dump_xex = app.add_subcommand("dump-xex", "Load, decrypt/decompress and dump a XEX image");
   dump_xex->add_option("xex", dump_xex_path, "Path to the XEX file")->required();
   dump_xex->add_option("output", dump_output_dir, "Directory for decoded image dumps")->required();
   dump_xex->callback([&] {

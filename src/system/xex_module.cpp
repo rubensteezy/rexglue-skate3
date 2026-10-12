@@ -90,8 +90,8 @@ void MaybeDumpLoadedXexImage(const XexModule& module) {
 
   const std::string safe_name = DumpSafeModuleName(module.name());
   const std::filesystem::path image_path =
-      dump_dir / fmt::format("{}_{:08X}_{:08X}.bin", safe_name, module.base_address(),
-                             module.image_size());
+      dump_dir /
+      fmt::format("{}_{:08X}_{:08X}.bin", safe_name, module.base_address(), module.image_size());
   std::ofstream image_file(image_path, std::ios::binary);
   if (!image_file) {
     REXLOG_WARN("Failed to open XEX image dump {}", image_path.string());
@@ -103,8 +103,8 @@ void MaybeDumpLoadedXexImage(const XexModule& module) {
   image_file.close();
 
   const std::filesystem::path meta_path =
-      dump_dir / fmt::format("{}_{:08X}_{:08X}.txt", safe_name, module.base_address(),
-                             module.image_size());
+      dump_dir /
+      fmt::format("{}_{:08X}_{:08X}.txt", safe_name, module.base_address(), module.image_size());
   std::ofstream meta_file(meta_path);
   if (meta_file) {
     meta_file << "name=" << module.name() << "\n";
