@@ -10,6 +10,7 @@
  * keyboard (arrows/Enter/Esc/Q/E/R/F) and mouse.
  */
 #include <rex/ui/overlay/simple_settings_overlay.h>
+#include <rex/ui/overlay/simple_settings_restart.h>
 
 #include <algorithm>
 #include <array>
@@ -645,6 +646,143 @@ void SetTearingCvars(bool value) {
   }
 }
 
+// ---- Restart-applied settings: cvar writes ---------------------------------
+// Shared by SaveVideo (Apply & Restart) and GetRestartSettings (other front
+// ends), so both write the same cvars for the same option.
+
+void ApplyGraphicsApi(int index) {
+  // Written only when the selection changed, so an untouched row keeps the
+  // cvar on "auto".
+  if (HasGraphicsApiChoice() && index != GraphicsApiIndexFromCvar()) {
+    rex::cvar::SetFlagByName("gpu_backend", index == 1 ? "vulkan" : "d3d12");
+  }
+}
+
+void ApplyGraphicsDevice(const GraphicsDeviceList& device_list, int index) {
+  if (device_list.device_names.empty() || !HasCvar(device_list.cvar_name)) {
+    return;
+  }
+  index = std::clamp(index, 0, static_cast<int>(device_list.device_names.size()) - 1);
+  // Selecting the device automatic selection already picked keeps the cvar
+  // automatic, so new hardware still re-picks the best adapter.
+  rex::cvar::SetFlagByName(device_list.cvar_name,
+                           index == device_list.active_index ? "-1" : std::to_string(index));
+}
+
+void ApplyRenderScale(int index) {
+  index = std::clamp(index, 0, static_cast<int>(kResolutionScales.size()) - 1);
+  const auto scale = std::to_string(kResolutionScales[index]);
+  rex::cvar::SetFlagByName("resolution_scale", scale);
+  rex::cvar::SetFlagByName("draw_resolution_scale_x", scale);
+  rex::cvar::SetFlagByName("draw_resolution_scale_y", scale);
+}
+
+void ApplyFrameCap(int index) {
+  index = std::clamp(index, 0, FrameCapUnlimitedIndex());
+  if (UseGuestFrameCap()) {
+    const int rate_base = FrameCapRateBaseIndex();
+    if (FrameCapHasAuto()) {
+      // Auto rides its own flag; the pacer derives the rate from the display
+      // refresh live (window moves between monitors keep working).
+      SetBoolCvar("skate3_guest_fps_cap_auto", index == 0);
+    }
+    const double cap_fps = index >= rate_base && index < FrameCapUnlimitedIndex()
+                               ? kFrameCapRates[index - rate_base]
+                               : 0.0;
+    rex::cvar::SetFlagByName("skate3_guest_fps_cap", std::to_string(cap_fps));
+    // Never run both pacers: the host limiter waits on the paint thread
+    // without backpressuring the guest, so presents drop frames on an
+    // irregular beat: the judder the guest cap exists to remove.
+    if (HasHostFrameCapCvars()) {
+      SetBoolCvar("d3d12_present_frame_limiter", false);
+    }
+  } else if (HasHostFrameCapCvars()) {
+    const bool capped = index < FrameCapUnlimitedIndex();
+    SetBoolCvar("d3d12_present_frame_limiter", capped);
+    if (capped) {
+      rex::cvar::SetFlagByName("d3d12_present_frame_limiter_fps",
+                               std::to_string(kFrameCapRates[index - FrameCapRateBaseIndex()]));
+    }
+  }
+}
+
+// Option labels for the Framerate Cap row: [Auto (N FPS),] <rates...>,
+// Unlimited.
+std::vector<std::string> FrameCapOptionLabels() {
+  std::vector<std::string> labels;
+  if (FrameCapHasAuto()) {
+    // Same policy the guest pacer applies (see Window::AutoFrameCapHz).
+    const float auto_cap =
+        rex::ui::Window::AutoFrameCapHz(rex::ui::Window::CachedDisplayRefreshHz());
+    labels.push_back(auto_cap > 0.0f ? "Auto (" + std::to_string(int(auto_cap)) + " FPS)"
+                                     : std::string("Auto"));
+  }
+  for (size_t i = 1; i < kFrameCapLabels.size(); ++i) {
+    labels.push_back(kFrameCapLabels[i]);
+  }
+  labels.push_back(kFrameCapLabels[0]);
+  return labels;
+}
+
+void ApplyAspectRatio(int index) {
+  if (HasCvar("skate3_ultrawide")) {
+    SetBoolCvar("skate3_ultrawide", index != 0);
+  }
+}
+
+void ApplyMsaa(int index) {
+  if (HasMsaaCvar()) {
+    index = std::clamp(index, 0, static_cast<int>(kMsaaSamples.size()) - 1);
+    rex::cvar::SetFlagByName("skate3_native_render_scene_msaa",
+                             std::to_string(kMsaaSamples[index]));
+  }
+}
+
+void ApplyShadowQuality(int index) {
+  if (HasShadowQualityCvars()) {
+    index = std::clamp(index, 0, static_cast<int>(kShadowQualityTiles.size()) - 1);
+    SetBoolCvar("skate3_native_render_scene_shadows", index != 0);
+    if (index != 0) {
+      rex::cvar::SetFlagByName("skate3_native_render_scene_shadow_tile",
+                               std::to_string(kShadowQualityTiles[index]));
+    }
+  }
+}
+
+void ApplyStaticShadowRes(int index) {
+  if (HasStaticShadowCvars()) {
+    index = std::clamp(index, 0, static_cast<int>(kStaticShadowResSizes.size()) - 1);
+    rex::cvar::SetFlagByName("skate3_native_render_scene_shadow_static_size",
+                             std::to_string(kStaticShadowResSizes[index]));
+  }
+}
+
+void ApplyMonitor(int index) {
+  if (HasCvar("monitor")) {
+    index = std::clamp(index, 0, static_cast<int>(kMonitorLabels.size()) - 1);
+    rex::cvar::SetFlagByName("monitor", std::to_string(index));
+  }
+}
+
+void ApplyAudioBuffer(int index) {
+  if (HasCvar("audio_device_sample_frames")) {
+    index = std::clamp(index, 0, static_cast<int>(kAudioBufferFrames.size()) - 1);
+    rex::cvar::SetFlagByName("audio_device_sample_frames",
+                             std::to_string(kAudioBufferFrames[index]));
+  }
+}
+
+void ApplyLanguage(int index) {
+  if (HasCvar("user_language")) {
+    index = std::clamp(index, 0, static_cast<int>(kLanguageLabels.size()) - 1);
+    rex::cvar::SetFlagByName("user_language", std::to_string(index + 1));
+  }
+}
+
+void ApplyInputBackend(int index) {
+  rex::cvar::SetFlagByName("input_backend", index == 1 ? "sdl" : "xinput");
+}
+
 // ---- Small draw helpers ----------------------------------------------------
 
 // Snap to whole pixels. Fractional origins under bilinear filtering smear
@@ -926,6 +1064,119 @@ void EnsureSimpleSettingsConfig(const std::filesystem::path& config_path) {
   }
 }
 
+std::vector<RestartSetting> GetRestartSettings() {
+  std::vector<RestartSetting> settings;
+  auto add = [&settings](std::string id, std::string label, std::string desc,
+                         std::vector<std::string> options, std::function<int()> current,
+                         std::function<void(int)> apply) {
+    settings.push_back({std::move(id), std::move(label), std::move(desc), std::move(options),
+                        std::move(current), std::move(apply)});
+  };
+  auto bool_cvar = [&add](std::string id, std::string label, std::string desc, std::string cvar) {
+    add(
+        std::move(id), std::move(label), std::move(desc), {"Off", "On"},
+        [cvar] { return rex::cvar::Query<bool>(cvar) ? 1 : 0; },
+        [cvar](int value) { SetBoolCvar(cvar, value != 0); });
+  };
+  auto labels = [](const auto& array) {
+    return std::vector<std::string>(array.begin(), array.end());
+  };
+
+  if (HasGraphicsApiChoice()) {
+    add("graphics_api", "Graphics API",
+        "Which graphics API the game renders through. Both perform similarly; try the "
+        "other one if you run into driver issues.",
+        {"DirectX 12", "Vulkan"}, GraphicsApiIndexFromCvar, ApplyGraphicsApi);
+  }
+  const GraphicsDeviceList devices = GetGraphicsDeviceList();
+  if (!devices.device_names.empty() && HasCvar(devices.cvar_name)) {
+    std::vector<std::string> options;
+    for (size_t i = 0; i < devices.device_names.size(); ++i) {
+      options.push_back(std::to_string(i) + ": " + devices.device_names[i]);
+    }
+    add(
+        "graphics_device", "Graphics Device",
+        "Which GPU renders the game. The highest-performance adapter is selected "
+        "automatically.",
+        std::move(options), [devices] { return DeviceIndexFromCvar(devices); },
+        [devices](int index) { ApplyGraphicsDevice(devices, index); });
+  }
+  add("render_scale", "Render Scale",
+      "Internal 3D render resolution as a multiple of the game's native 720p, scaled to "
+      "your display.",
+      labels(kResolutionLabels), ResolutionIndexFromCvar, ApplyRenderScale);
+  if (HasFrameCapControl()) {
+    add("frame_cap", "Framerate Cap",
+        "Limits how fast the game runs. Auto caps slightly below your display's refresh "
+        "rate for the smoothest pacing.",
+        FrameCapOptionLabels(), FrameCapIndexFromCvar, ApplyFrameCap);
+  }
+  if (HasCvar("skate3_ultrawide")) {
+    add(
+        "aspect_ratio", "Aspect Ratio",
+        "21:9 widens the world rendering for ultrawide displays. Requires the native "
+        "renderer.",
+        labels(kAspectRatioLabels),
+        [] { return rex::cvar::Query<bool>("skate3_ultrawide") ? 1 : 0; }, ApplyAspectRatio);
+  }
+  bool_cvar("fullscreen", "Fullscreen", "Borderless fullscreen instead of a window.", "fullscreen");
+  if (HasCvar("monitor")) {
+    add("monitor", "Monitor",
+        "Which display the game window opens on. Auto uses the primary display.",
+        labels(kMonitorLabels), MonitorIndexFromCvar, ApplyMonitor);
+  }
+  bool_cvar("vsync", "V-Sync",
+            "Waits for the display before presenting frames. Adds latency; not "
+            "recommended.",
+            "vsync");
+  add(
+      "tearing", "VRR / Tearing",
+      "Allows uncapped presentation on variable-refresh-rate displays (G-Sync / "
+      "FreeSync). Recommended on.",
+      {"Off", "On"}, [] { return TearingFromCvar() ? 1 : 0; },
+      [](int value) { SetTearingCvars(value != 0); });
+  if (HasMsaaCvar()) {
+    add("msaa", "Anti-Aliasing (MSAA)",
+        "Multisampling for the native renderer. Smooths thin distant geometry such as "
+        "railings and wires.",
+        labels(kMsaaLabels), MsaaIndexFromCvar, ApplyMsaa);
+  }
+  if (HasShadowQualityCvars()) {
+    add("shadow_quality", "Shadow Quality",
+        "Character and prop shadow resolution in the native renderer. Auto follows Render "
+        "Scale; 512 matches the original game.",
+        labels(kShadowQualityLabels), ShadowQualityIndexFromCvar, ApplyShadowQuality);
+  }
+  if (HasStaticShadowCvars()) {
+    add("static_shadow_res", "Enhanced Shadow Resolution",
+        "Resolution of the enhanced shadow map. Higher is sharper at distance but uses "
+        "more video memory.",
+        labels(kStaticShadowResLabels), StaticShadowResIndexFromCvar, ApplyStaticShadowRes);
+  }
+  bool_cvar("mnk_mode", "Mouse & Keyboard Mode",
+            "Emulates a controller from mouse and keyboard input.", "mnk_mode");
+  bool_cvar("mnk_capture_mouse", "Capture Mouse",
+            "Locks the cursor to the game window while Mouse & Keyboard Mode is active.",
+            "mnk_capture_mouse");
+  if (HasInputBackendChoice()) {
+    add("input_backend", "Controller Backend",
+        "Which API reads controllers. SDL also supports PlayStation, Switch and most "
+        "generic controllers.",
+        {"XInput", "SDL"}, InputBackendIndexFromCvar, ApplyInputBackend);
+  }
+  if (HasCvar("audio_device_sample_frames")) {
+    add("audio_buffer", "Audio Buffer Size",
+        "Audio device buffer length. Larger buffers add a little latency but fix "
+        "crackling.",
+        labels(kAudioBufferLabels), AudioBufferIndexFromCvar, ApplyAudioBuffer);
+  }
+  if (HasCvar("user_language")) {
+    add("language", "Game Language", "The language Skate 3 boots in.", labels(kLanguageLabels),
+        LanguageIndexFromCvar, ApplyLanguage);
+  }
+  return settings;
+}
+
 // One setting row (or section header) in the content column.
 struct SimpleSettingsDialog::RowSpec {
   enum Kind { kHeader, kEnum, kSlider, kAction, kText };
@@ -1138,95 +1389,47 @@ void SimpleSettingsDialog::SaveVideo() {
       std::clamp(aspect_ratio_index_, 0, static_cast<int>(kAspectRatioLabels.size()) - 1);
   field_of_view_ = std::clamp(field_of_view_, 40.0f, 120.0f);
   graphics_api_index_ = std::clamp(graphics_api_index_, 0, 1);
-  // Written only when the selection changed, so an untouched row keeps the
-  // cvar on "auto".
-  if (HasGraphicsApiChoice() && graphics_api_index_ != GraphicsApiIndexFromCvar()) {
-    rex::cvar::SetFlagByName("gpu_backend", graphics_api_index_ == 1 ? "vulkan" : "d3d12");
-  }
+  ApplyGraphicsApi(graphics_api_index_);
   if (!device_list_.device_names.empty() && HasCvar(device_list_.cvar_name)) {
     device_index_ = std::clamp(device_index_, 0,
                                static_cast<int>(device_list_.device_names.size()) - 1);
-    // Selecting the device automatic selection already picked keeps the cvar
-    // automatic, so new hardware still re-picks the best adapter.
-    rex::cvar::SetFlagByName(device_list_.cvar_name,
-                             device_index_ == device_list_.active_index
-                                 ? "-1"
-                                 : std::to_string(device_index_));
+    ApplyGraphicsDevice(device_list_, device_index_);
   }
-  const auto scale = std::to_string(kResolutionScales[resolution_scale_index_]);
-  rex::cvar::SetFlagByName("resolution_scale", scale);
-  rex::cvar::SetFlagByName("draw_resolution_scale_x", scale);
-  rex::cvar::SetFlagByName("draw_resolution_scale_y", scale);
-  if (UseGuestFrameCap()) {
-    const int rate_base = FrameCapRateBaseIndex();
-    if (FrameCapHasAuto()) {
-      // Auto rides its own flag; the pacer derives the rate from the display
-      // refresh live (window moves between monitors keep working).
-      SetBoolCvar("skate3_guest_fps_cap_auto", frame_cap_index_ == 0);
-    }
-    const double cap_fps =
-        frame_cap_index_ >= rate_base && frame_cap_index_ < FrameCapUnlimitedIndex()
-            ? kFrameCapRates[frame_cap_index_ - rate_base]
-            : 0.0;
-    rex::cvar::SetFlagByName("skate3_guest_fps_cap", std::to_string(cap_fps));
-    // Never run both pacers: the host limiter waits on the paint thread
-    // without backpressuring the guest, so presents drop frames on an
-    // irregular beat: the judder the guest cap exists to remove.
-    if (HasHostFrameCapCvars()) {
-      SetBoolCvar("d3d12_present_frame_limiter", false);
-    }
-  } else if (HasHostFrameCapCvars()) {
-    const bool capped = frame_cap_index_ < FrameCapUnlimitedIndex();
-    SetBoolCvar("d3d12_present_frame_limiter", capped);
-    if (capped) {
-      rex::cvar::SetFlagByName(
-          "d3d12_present_frame_limiter_fps",
-          std::to_string(kFrameCapRates[frame_cap_index_ - FrameCapRateBaseIndex()]));
-    }
-  }
+  ApplyRenderScale(resolution_scale_index_);
+  ApplyFrameCap(frame_cap_index_);
   SetBoolCvar("fullscreen", fullscreen_);
-  if (HasCvar("skate3_ultrawide")) {
-    SetBoolCvar("skate3_ultrawide", aspect_ratio_index_ != 0);
-  }
+  ApplyAspectRatio(aspect_ratio_index_);
   if (HasFieldOfViewCvar()) {
     rex::cvar::SetFlagByName("skate3_field_of_view", std::to_string(field_of_view_));
   }
   if (HasMsaaCvar()) {
     msaa_index_ = std::clamp(msaa_index_, 0, static_cast<int>(kMsaaSamples.size()) - 1);
-    rex::cvar::SetFlagByName("skate3_native_render_scene_msaa",
-                             std::to_string(kMsaaSamples[msaa_index_]));
+    ApplyMsaa(msaa_index_);
   }
   if (HasShadowQualityCvars()) {
     shadow_quality_index_ =
         std::clamp(shadow_quality_index_, 0, static_cast<int>(kShadowQualityTiles.size()) - 1);
-    SetBoolCvar("skate3_native_render_scene_shadows", shadow_quality_index_ != 0);
-    if (shadow_quality_index_ != 0) {
-      rex::cvar::SetFlagByName("skate3_native_render_scene_shadow_tile",
-                               std::to_string(kShadowQualityTiles[shadow_quality_index_]));
-    }
+    ApplyShadowQuality(shadow_quality_index_);
   }
   if (HasStaticShadowCvars()) {
     static_shadow_res_index_ = std::clamp(
         static_shadow_res_index_, 0,
         static_cast<int>(kStaticShadowResSizes.size()) - 1);
-    rex::cvar::SetFlagByName(
-        "skate3_native_render_scene_shadow_static_size",
-        std::to_string(kStaticShadowResSizes[static_shadow_res_index_]));
+    ApplyStaticShadowRes(static_shadow_res_index_);
   }
   if (HasCvar("monitor")) {
     monitor_index_ = std::clamp(monitor_index_, 0, static_cast<int>(kMonitorLabels.size()) - 1);
-    rex::cvar::SetFlagByName("monitor", std::to_string(monitor_index_));
+    ApplyMonitor(monitor_index_);
   }
   if (HasCvar("audio_device_sample_frames")) {
     audio_buffer_index_ =
         std::clamp(audio_buffer_index_, 0, static_cast<int>(kAudioBufferFrames.size()) - 1);
-    rex::cvar::SetFlagByName("audio_device_sample_frames",
-                             std::to_string(kAudioBufferFrames[audio_buffer_index_]));
+    ApplyAudioBuffer(audio_buffer_index_);
   }
   if (HasCvar("user_language")) {
     language_index_ =
         std::clamp(language_index_, 0, static_cast<int>(kLanguageLabels.size()) - 1);
-    rex::cvar::SetFlagByName("user_language", std::to_string(language_index_ + 1));
+    ApplyLanguage(language_index_);
   }
   SetBoolCvar("vsync", vsync_);
   SetTearingCvars(tearing_);
@@ -1350,19 +1553,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
             "refresh rate gives the smoothest pacing on variable-refresh displays; "
             "Auto tracks the current display and does exactly that. Frames above the "
             "refresh rate cannot be shown and only make steady motion judder.";
-        if (FrameCapHasAuto()) {
-          // Same policy the guest pacer applies (see Window::AutoFrameCapHz).
-          const float auto_cap =
-              rex::ui::Window::AutoFrameCapHz(rex::ui::Window::CachedDisplayRefreshHz());
-          row.options.push_back(
-              auto_cap > 0.0f
-                  ? "Auto (" + std::to_string(int(auto_cap)) + " FPS)"
-                  : std::string("Auto"));
-        }
-        for (size_t i = 1; i < kFrameCapLabels.size(); ++i) {
-          row.options.push_back(kFrameCapLabels[i]);
-        }
-        row.options.push_back(kFrameCapLabels[0]);
+        row.options = FrameCapOptionLabels();
         row.index = &frame_cap_index_;
         row.reset = [this] {
           if (FrameCapHasAuto() &&
@@ -1859,7 +2050,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.options = {"XInput", "SDL"};
         row.index = &input_backend_index_;
         row.on_enum_change = [this](int value) {
-          rex::cvar::SetFlagByName("input_backend", value == 1 ? "sdl" : "xinput");
+          ApplyInputBackend(value);
           SaveSimpleSettingsConfig(config_path_);
         };
         row.reset = [this] {
