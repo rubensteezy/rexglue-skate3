@@ -271,6 +271,7 @@ void BuilderContext::emit_function_call(uint32_t address) {
 
   // No pre-resolved target found - this is an error
   if (auto* targetFn = graph().getFunction(address)) {
+    emitCtx.reference(targetFn->name());
     println("\t{}(ctx, base);", targetFn->name());
     return;
   }
@@ -320,6 +321,7 @@ void BuilderContext::emit_conditional_branch(bool not_, std::string_view cond) {
       } else {
         if (auto* targetFn = graph().getFunction(target)) {
           println("\tif ({}{}.{}) {{", not_ ? "!" : "", cr(insn.operands[0]), cond);
+          emitCtx.reference(targetFn->name());
           println("\t\t{}(ctx, base);", targetFn->name());
           println("\t\treturn;");
           println("\t}}");
@@ -336,6 +338,7 @@ void BuilderContext::emit_conditional_branch(bool not_, std::string_view cond) {
     case TargetKind::Unknown:
       if (auto* targetFn = graph().getFunction(target)) {
         println("\tif ({}{}.{}) {{", not_ ? "!" : "", cr(insn.operands[0]), cond);
+        emitCtx.reference(targetFn->name());
         println("\t\t{}(ctx, base);", targetFn->name());
         println("\t\treturn;");
         println("\t}}");

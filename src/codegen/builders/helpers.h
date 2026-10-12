@@ -399,6 +399,7 @@ inline void emitBranchWithBoundsCheck(BuilderContext& ctx, uint32_t target,
   if (auto* targetFn = ctx.graph().getFunction(target)) {
     REXCODEGEN_WARN("{} at {:X} branches outside function to {:X}", instr_name, ctx.base, target);
     ctx.println("\tif ({}) {{", condition);
+    ctx.emitCtx.reference(targetFn->name());
     ctx.println("\t\t{}(ctx, base);", targetFn->name());
     ctx.println("\t\treturn;");
     ctx.println("\t}}");
