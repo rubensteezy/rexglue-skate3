@@ -160,10 +160,11 @@ StateInfo ToStateInfo(ResourceState state) {
               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
     case ResourceState::kDepthWrite:
-      return {VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+      return {
+          VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
     case ResourceState::kPixelShaderResource:
       return {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
@@ -420,8 +421,7 @@ class NrCmdVulkan : public nrhi::Cmd {
   void SetConstantBuffer(uint32_t param, nrhi::Buffer* buffer, uint64_t offset) override;
   void SetBufferSrv(uint32_t param, nrhi::Buffer* buffer, uint64_t offset) override;
   void SetTexture(uint32_t param, nrhi::TextureView* view) override;
-  void SetTexturePair(uint32_t param, nrhi::TextureView* first,
-                      nrhi::TextureView* second) override;
+  void SetTexturePair(uint32_t param, nrhi::TextureView* first, nrhi::TextureView* second) override;
   void SetTextures(uint32_t param, nrhi::TextureView* const* views, uint32_t count) override;
   void SetRenderTargets(nrhi::Texture* color, nrhi::Texture* depth) override;
   void ClearRenderTarget(nrhi::Texture* color, const float color4[4]) override;
@@ -512,8 +512,7 @@ class NrDeviceVulkan : public nrhi::Device {
   // kCpFramesInFlight - 1 regions ahead of it (the next frames record into
   // them before this frame executes) are live; the rest belong to frames the
   // in-flight fence has already retired.
-  static constexpr uint32_t kRingOverflowRegions =
-      kRingRegions + 1 - 2 * kCpFramesInFlight;
+  static constexpr uint32_t kRingOverflowRegions = kRingRegions + 1 - 2 * kCpFramesInFlight;
 
   explicit NrDeviceVulkan(VulkanCommandProcessor* cp)
       : cp_(cp), vulkan_device_(cp->GetVulkanDevice()) {
@@ -533,15 +532,15 @@ class NrDeviceVulkan : public nrhi::Device {
     ring_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     ring_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VmaAllocationCreateInfo ring_alloc_info = {};
-    ring_alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
-                            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    ring_alloc_info.flags =
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     ring_alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
     ring_alloc_info.requiredFlags =
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     VmaAllocationInfo ring_result_info = {};
     if (allocator_ == VK_NULL_HANDLE ||
-        vmaCreateBuffer(allocator_, &ring_info, &ring_alloc_info, &ring_buffer_,
-                        &ring_allocation_, &ring_result_info) != VK_SUCCESS) {
+        vmaCreateBuffer(allocator_, &ring_info, &ring_alloc_info, &ring_buffer_, &ring_allocation_,
+                        &ring_result_info) != VK_SUCCESS) {
       REXLOG_ERROR("nrhi-vulkan: root-constant ring UBO creation failed");
       ring_buffer_ = VK_NULL_HANDLE;
     } else {
@@ -580,8 +579,8 @@ class NrDeviceVulkan : public nrhi::Device {
       REXLOG_INFO(
           "nrhi-vulkan: releasing app-held objects at device destruction "
           "(buffers={} textures={} views={} pipelines={} shaders={})",
-          live_buffers_.size(), live_textures_.size(), live_views_.size(),
-          live_pipelines_.size(), live_shaders_.size());
+          live_buffers_.size(), live_textures_.size(), live_views_.size(), live_pipelines_.size(),
+          live_shaders_.size());
     }
     for (NrTextureViewVulkan* v : live_views_) {
       if (v->view != VK_NULL_HANDLE) {
@@ -803,8 +802,7 @@ class NrDeviceVulkan : public nrhi::Device {
       if (!(mem_flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
         REXLOG_WARN(
             "nrhi-vulkan: texture ({}x{} fmt {} samples {}) landed in HOST memory (flags {:#x})",
-            desc.width, desc.height, uint32_t(desc.format), desc.sample_count,
-            uint32_t(mem_flags));
+            desc.width, desc.height, uint32_t(desc.format), desc.sample_count, uint32_t(mem_flags));
       }
     }
     auto* t = new NrTextureVulkan();
@@ -841,7 +839,8 @@ class NrDeviceVulkan : public nrhi::Device {
   // --- deferred destruction ---
 
   void DestroyDeferred(nrhi::Buffer* buffer) override {
-    if (buffer == nullptr) return;
+    if (buffer == nullptr)
+      return;
     auto* b = static_cast<NrBufferVulkan*>(buffer);
     // Retire cached set-0 descriptor sets whose buffer tuple references this
     // buffer. set0_sets_ is render-thread-only, like the D3D12 backend's
@@ -885,12 +884,16 @@ class NrDeviceVulkan : public nrhi::Device {
   }
 
   void DestroyDeferred(nrhi::Texture* texture) override {
-    if (texture == nullptr) return;
+    if (texture == nullptr)
+      return;
     auto* t = static_cast<NrTextureVulkan*>(texture);
-    if (t->is_guest_output) return;  // wrappers are owned by the device cache
+    if (t->is_guest_output)
+      return;  // wrappers are owned by the device cache
     RetireFramebuffersForView(t->attachment_view);
-    if (cmd_.rt_color_ == t) cmd_.rt_color_ = nullptr;
-    if (cmd_.rt_depth_ == t) cmd_.rt_depth_ = nullptr;
+    if (cmd_.rt_color_ == t)
+      cmd_.rt_color_ = nullptr;
+    if (cmd_.rt_depth_ == t)
+      cmd_.rt_depth_ = nullptr;
     std::erase(pending_clear_textures_, t);
     std::lock_guard<std::mutex> lock(mutex_);
     live_textures_.erase(t);
@@ -906,7 +909,8 @@ class NrDeviceVulkan : public nrhi::Device {
   }
 
   void DestroyDeferred(nrhi::TextureView* view) override {
-    if (view == nullptr) return;
+    if (view == nullptr)
+      return;
     // Destruction is batched: the view object stays allocated (so its
     // address cannot be reused by a new view while stale cache keys still
     // hold it) and FlushDissolvedViews sweeps the descriptor-set cache ONCE
@@ -925,7 +929,8 @@ class NrDeviceVulkan : public nrhi::Device {
   // cached texture descriptor set referencing a view destroyed since the
   // last flush, then retire the views themselves.
   void FlushDissolvedViews() {
-    if (dissolved_views_.empty()) return;
+    if (dissolved_views_.empty())
+      return;
     NrProfScope prof_scope(prof_.view_destroy);
     const uint64_t submission = cp_->GetCurrentSubmission();
     std::unordered_set<const NrTextureViewVulkan*> dissolved(dissolved_views_.begin(),
@@ -958,7 +963,8 @@ class NrDeviceVulkan : public nrhi::Device {
   }
 
   void DestroyDeferred(nrhi::Pipeline* pipeline) override {
-    if (pipeline == nullptr) return;
+    if (pipeline == nullptr)
+      return;
     auto* p = static_cast<NrPipelineVulkan*>(pipeline);
     std::lock_guard<std::mutex> lock(mutex_);
     live_pipelines_.erase(p);
@@ -971,7 +977,8 @@ class NrDeviceVulkan : public nrhi::Device {
   }
 
   void DestroyDeferred(nrhi::Shader* shader) override {
-    if (shader == nullptr) return;
+    if (shader == nullptr)
+      return;
     auto* s = static_cast<NrShaderVulkan*>(shader);
     std::lock_guard<std::mutex> lock(mutex_);
     live_shaders_.erase(s);
@@ -1077,7 +1084,8 @@ class NrDeviceVulkan : public nrhi::Device {
     // Set 0: buffer params in param order (dynamic-offset descriptors), then
     // the static samplers in declaration order (immutable). All graphics
     // stage flags everywhere - the frozen derivation rule.
-    const VkShaderStageFlags kAllGraphics = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    const VkShaderStageFlags kAllGraphics =
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     std::vector<VkDescriptorSetLayoutBinding> set0_bindings;
     uint32_t table_count = 0;
     for (uint32_t i = 0; i < desc.param_count; ++i) {
@@ -1137,7 +1145,8 @@ class NrDeviceVulkan : public nrhi::Device {
     // 0..count-1.
     for (uint32_t i = 0; i < desc.param_count; ++i) {
       const nrhi::BindingParamDesc& p = desc.params[i];
-      if (p.kind != nrhi::BindingParamKind::kTextureTable) continue;
+      if (p.kind != nrhi::BindingParamKind::kTextureTable)
+        continue;
       std::vector<VkDescriptorSetLayoutBinding> table_bindings(p.count);
       for (uint32_t j = 0; j < p.count; ++j) {
         table_bindings[j] = {};
@@ -1179,8 +1188,7 @@ class NrDeviceVulkan : public nrhi::Device {
 
   nrhi::Shader* CreateShader(const nrhi::ShaderDesc& desc) override {
     if (desc.spirv == nullptr || desc.spirv_size_bytes == 0) {
-      REXLOG_ERROR("nrhi-vulkan: no SPIR-V blob for {}:{}",
-                   desc.name != nullptr ? desc.name : "?",
+      REXLOG_ERROR("nrhi-vulkan: no SPIR-V blob for {}:{}", desc.name != nullptr ? desc.name : "?",
                    desc.entry_point != nullptr ? desc.entry_point : "?");
       return nullptr;
     }
@@ -1209,7 +1217,8 @@ class NrDeviceVulkan : public nrhi::Device {
     auto* layout = static_cast<NrBindingLayoutVulkan*>(desc.layout);
     auto* vs = static_cast<NrShaderVulkan*>(desc.vs);
     auto* ps = static_cast<NrShaderVulkan*>(desc.ps);
-    if (layout == nullptr || vs == nullptr || ps == nullptr) return nullptr;
+    if (layout == nullptr || vs == nullptr || ps == nullptr)
+      return nullptr;
     auto* pipeline = new NrPipelineVulkan();
     pipeline->vs_module = vs->module;
     pipeline->ps_module = ps->module;
@@ -1326,9 +1335,8 @@ class NrDeviceVulkan : public nrhi::Device {
     EnsureWhiteTexture();
 
     NrTextureVulkan*& wrapper = guest_outputs_[guest_output_image];
-    if (wrapper != nullptr &&
-        (wrapper->desc.width != width || wrapper->desc.height != height ||
-         wrapper->attachment_view != guest_output_image_view)) {
+    if (wrapper != nullptr && (wrapper->desc.width != width || wrapper->desc.height != height ||
+                               wrapper->attachment_view != guest_output_image_view)) {
       // Same VkImage handle value, different geometry/view: a recreated
       // image reusing the handle. Drop the stale wrapper (image + view are
       // presenter-owned) and its framebuffers.
@@ -1392,8 +1400,7 @@ class NrDeviceVulkan : public nrhi::Device {
             prof_.table_miss.count, prof_.set0_miss.us, prof_.set0_miss.count,
             prof_.view_destroy.us, prof_.view_destroy.count, prof_.view_create.us,
             prof_.view_create.count, prof_.const_slice.us, prof_.const_slice.count,
-            prof_.pipeline_build.us, prof_.pipeline_build.count, prof_.drain.us,
-            prof_.drain.count);
+            prof_.pipeline_build.us, prof_.pipeline_build.count, prof_.drain.us, prof_.drain.count);
       }
     }
   }
@@ -1410,7 +1417,8 @@ class NrDeviceVulkan : public nrhi::Device {
   // Bump-allocates a 256-aligned slice in the current ring region and copies
   // the shadow block in. Returns the dynamic offset. Render thread only.
   uint32_t AllocateConstantSlice(const void* data, uint32_t size_bytes) {
-    if (ring_mapping_ == nullptr) return 0;
+    if (ring_mapping_ == nullptr)
+      return 0;
     NrProfScope prof_scope(prof_.const_slice);
     uint32_t aligned = (size_bytes + 255u) & ~255u;
     if (ring_region_offset_ + aligned > kRingRegionSize) {
@@ -1423,8 +1431,7 @@ class NrDeviceVulkan : public nrhi::Device {
         // exactly one frame: a character/vehicle shadow blink unique to this
         // backend (D3D12 uses true root constants).
         ring_region_base_ =
-            uint32_t((frame_index_ + kCpFramesInFlight + ring_overflow_hops_) %
-                     kRingRegions) *
+            uint32_t((frame_index_ + kCpFramesInFlight + ring_overflow_hops_) % kRingRegions) *
             kRingRegionSize;
         ring_region_offset_ = 0;
         ++ring_overflow_hops_;
@@ -1433,8 +1440,7 @@ class NrDeviceVulkan : public nrhi::Device {
           REXLOG_INFO(
               "nrhi-vulkan: root-constant region overflow (> {} bytes this frame), "
               "continuing in idle region (hop {}/{}, n={})",
-              kRingRegionSize, ring_overflow_hops_, kRingOverflowRegions,
-              ring_overflow_count_);
+              kRingRegionSize, ring_overflow_hops_, kRingOverflowRegions, ring_overflow_count_);
         }
       } else {
         // Every safe region is full (> kRingRegionSize * (1 +
@@ -1461,7 +1467,8 @@ class NrDeviceVulkan : public nrhi::Device {
   // an internal transition when the app relied on a D3D12 initial state (or
   // hasn't flushed a queued barrier - the caller submits right after).
   void EnsureLayout(NrTextureVulkan* t, const StateInfo& dst) {
-    if (t->current_layout == dst.layout) return;
+    if (t->current_layout == dst.layout)
+      return;
     const bool undefined = t->current_layout == VK_IMAGE_LAYOUT_UNDEFINED;
     cp_->PushImageMemoryBarrier(
         t->image, t->WholeRange(),
@@ -1473,7 +1480,8 @@ class NrDeviceVulkan : public nrhi::Device {
 
   // Attachment (identity-swizzle) view of mip 0, created lazily.
   VkImageView GetAttachmentView(NrTextureVulkan* t) {
-    if (t->attachment_view != VK_NULL_HANDLE) return t->attachment_view;
+    if (t->attachment_view != VK_NULL_HANDLE)
+      return t->attachment_view;
     VkImageViewCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.image = t->image;
@@ -1497,7 +1505,8 @@ class NrDeviceVulkan : public nrhi::Device {
                              bool color_clear, bool depth_clear) {
     RenderPassKey key{color_format, depth_format, samples, color_clear, depth_clear};
     auto it = render_passes_.find(key);
-    if (it != render_passes_.end()) return it->second;
+    if (it != render_passes_.end())
+      return it->second;
 
     VkAttachmentDescription attachments[2] = {};
     VkAttachmentReference color_ref = {};
@@ -1545,9 +1554,9 @@ class NrDeviceVulkan : public nrhi::Device {
     // Explicit external dependencies ordering attachment access between
     // back-to-back passes on the same target (D3D12 needed no barrier for
     // consecutive passes in the same resource state).
-    const VkPipelineStageFlags attachment_stages =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    const VkPipelineStageFlags attachment_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     const VkAccessFlags attachment_access =
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -1589,11 +1598,14 @@ class NrDeviceVulkan : public nrhi::Device {
     // attachment set, so the key omits the render pass.
     FramebufferKey key{color_view, depth_view, width, height};
     auto it = framebuffers_.find(key);
-    if (it != framebuffers_.end()) return it->second;
+    if (it != framebuffers_.end())
+      return it->second;
     VkImageView attachments[2];
     uint32_t attachment_count = 0;
-    if (color_view != VK_NULL_HANDLE) attachments[attachment_count++] = color_view;
-    if (depth_view != VK_NULL_HANDLE) attachments[attachment_count++] = depth_view;
+    if (color_view != VK_NULL_HANDLE)
+      attachments[attachment_count++] = color_view;
+    if (depth_view != VK_NULL_HANDLE)
+      attachments[attachment_count++] = depth_view;
     VkFramebufferCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     info.renderPass = render_pass;
@@ -1614,7 +1626,8 @@ class NrDeviceVulkan : public nrhi::Device {
 
   // Retires all cached framebuffers referencing the view. Render thread.
   void RetireFramebuffersForView(VkImageView view) {
-    if (view == VK_NULL_HANDLE) return;
+    if (view == VK_NULL_HANDLE)
+      return;
     const uint64_t submission = cp_->GetCurrentSubmission();
     for (auto it = framebuffers_.begin(); it != framebuffers_.end();) {
       if (it->first.color_view == view || it->first.depth_view == view) {
@@ -1643,17 +1656,20 @@ class NrDeviceVulkan : public nrhi::Device {
       key.buffers[i] = vk_buffers[i];
     }
     auto it = set0_sets_.find(key);
-    if (it != set0_sets_.end()) return it->second.set;
+    if (it != set0_sets_.end())
+      return it->second.set;
 
     NrProfScope prof_scope(prof_.set0_miss);
     SetEntry entry;
-    if (!AllocateDescriptorSet(layout->set0_layout, &entry)) return VK_NULL_HANDLE;
+    if (!AllocateDescriptorSet(layout->set0_layout, &entry))
+      return VK_NULL_HANDLE;
     VkDescriptorBufferInfo buffer_infos[nrhi::kMaxBindingParams];
     VkWriteDescriptorSet writes[nrhi::kMaxBindingParams];
     uint32_t write_count = 0;
     for (uint32_t i = 0; i < layout->param_count; ++i) {
       const NrBindingLayoutVulkan::ParamInfo& p = layout->params[i];
-      if (p.kind == nrhi::BindingParamKind::kTextureTable) continue;
+      if (p.kind == nrhi::BindingParamKind::kTextureTable)
+        continue;
       VkDescriptorBufferInfo& bi = buffer_infos[write_count];
       bi.buffer = vk_buffers[p.set0_binding];
       bi.offset = 0;  // the bind offset rides the dynamic offset
@@ -1677,8 +1693,8 @@ class NrDeviceVulkan : public nrhi::Device {
 
   // Cached texture-table set for (per-param set layout, ordered view tuple)
   // with white-fallback substitution already applied by the caller.
-  VkDescriptorSet GetTableSet(VkDescriptorSetLayout set_layout,
-                              NrTextureViewVulkan* const* views, uint32_t count) {
+  VkDescriptorSet GetTableSet(VkDescriptorSetLayout set_layout, NrTextureViewVulkan* const* views,
+                              uint32_t count) {
     TableKey key{};
     key.layout = set_layout;
     key.count = count;
@@ -1686,11 +1702,13 @@ class NrDeviceVulkan : public nrhi::Device {
       key.views[i] = views[i];
     }
     auto it = table_sets_.find(key);
-    if (it != table_sets_.end()) return it->second.set;
+    if (it != table_sets_.end())
+      return it->second.set;
 
     NrProfScope prof_scope(prof_.table_miss);
     SetEntry entry;
-    if (!AllocateDescriptorSet(set_layout, &entry)) return VK_NULL_HANDLE;
+    if (!AllocateDescriptorSet(set_layout, &entry))
+      return VK_NULL_HANDLE;
     VkDescriptorImageInfo image_infos[nrhi::kMaxTextureTableSize];
     VkWriteDescriptorSet writes[nrhi::kMaxTextureTableSize];
     for (uint32_t i = 0; i < count; ++i) {
@@ -1748,10 +1766,14 @@ class NrDeviceVulkan : public nrhi::Device {
     bool color_clear;
     bool depth_clear;
     bool operator<(const RenderPassKey& o) const {
-      if (color_format != o.color_format) return color_format < o.color_format;
-      if (depth_format != o.depth_format) return depth_format < o.depth_format;
-      if (samples != o.samples) return samples < o.samples;
-      if (color_clear != o.color_clear) return color_clear < o.color_clear;
+      if (color_format != o.color_format)
+        return color_format < o.color_format;
+      if (depth_format != o.depth_format)
+        return depth_format < o.depth_format;
+      if (samples != o.samples)
+        return samples < o.samples;
+      if (color_clear != o.color_clear)
+        return color_clear < o.color_clear;
       return depth_clear < o.depth_clear;
     }
   };
@@ -1762,9 +1784,12 @@ class NrDeviceVulkan : public nrhi::Device {
     uint32_t width;
     uint32_t height;
     bool operator<(const FramebufferKey& o) const {
-      if (color_view != o.color_view) return color_view < o.color_view;
-      if (depth_view != o.depth_view) return depth_view < o.depth_view;
-      if (width != o.width) return width < o.width;
+      if (color_view != o.color_view)
+        return color_view < o.color_view;
+      if (depth_view != o.depth_view)
+        return depth_view < o.depth_view;
+      if (width != o.width)
+        return width < o.width;
       return height < o.height;
     }
   };
@@ -1774,10 +1799,13 @@ class NrDeviceVulkan : public nrhi::Device {
     VkBuffer buffers[nrhi::kMaxBindingParams];
     uint32_t count;
     bool operator<(const Set0Key& o) const {
-      if (layout != o.layout) return layout < o.layout;
-      if (count != o.count) return count < o.count;
+      if (layout != o.layout)
+        return layout < o.layout;
+      if (count != o.count)
+        return count < o.count;
       for (uint32_t i = 0; i < count; ++i) {
-        if (buffers[i] != o.buffers[i]) return buffers[i] < o.buffers[i];
+        if (buffers[i] != o.buffers[i])
+          return buffers[i] < o.buffers[i];
       }
       return false;
     }
@@ -1788,10 +1816,13 @@ class NrDeviceVulkan : public nrhi::Device {
     NrTextureViewVulkan* views[nrhi::kMaxTextureTableSize];
     uint32_t count;
     bool operator<(const TableKey& o) const {
-      if (layout != o.layout) return layout < o.layout;
-      if (count != o.count) return count < o.count;
+      if (layout != o.layout)
+        return layout < o.layout;
+      if (count != o.count)
+        return count < o.count;
       for (uint32_t i = 0; i < count; ++i) {
-        if (views[i] != o.views[i]) return views[i] < o.views[i];
+        if (views[i] != o.views[i])
+          return views[i] < o.views[i];
       }
       return false;
     }
@@ -1854,12 +1885,16 @@ class NrDeviceVulkan : public nrhi::Device {
     const VkDevice device = vulkan_device_->device();
     size_t destroyed = 0;
     std::erase_if(retired_, [&](const RetiredObject& r) {
-      if (r.submission >= completed || destroyed >= max_objects) return false;
+      if (r.submission >= completed || destroyed >= max_objects)
+        return false;
       ++destroyed;
-      if (r.framebuffer != VK_NULL_HANDLE) dfn.vkDestroyFramebuffer(device, r.framebuffer, nullptr);
-      if (r.view != VK_NULL_HANDLE) dfn.vkDestroyImageView(device, r.view, nullptr);
+      if (r.framebuffer != VK_NULL_HANDLE)
+        dfn.vkDestroyFramebuffer(device, r.framebuffer, nullptr);
+      if (r.view != VK_NULL_HANDLE)
+        dfn.vkDestroyImageView(device, r.view, nullptr);
       for (VkPipeline pipeline : r.pipelines) {
-        if (pipeline != VK_NULL_HANDLE) dfn.vkDestroyPipeline(device, pipeline, nullptr);
+        if (pipeline != VK_NULL_HANDLE)
+          dfn.vkDestroyPipeline(device, pipeline, nullptr);
       }
       if (r.shader_module != VK_NULL_HANDLE) {
         dfn.vkDestroyShaderModule(device, r.shader_module, nullptr);
@@ -1867,15 +1902,18 @@ class NrDeviceVulkan : public nrhi::Device {
       if (r.descriptor_set != VK_NULL_HANDLE) {
         dfn.vkFreeDescriptorSets(device, r.descriptor_pool, 1, &r.descriptor_set);
       }
-      if (r.image != VK_NULL_HANDLE) vmaDestroyImage(allocator_, r.image, r.image_allocation);
-      if (r.buffer != VK_NULL_HANDLE) vmaDestroyBuffer(allocator_, r.buffer, r.buffer_allocation);
+      if (r.image != VK_NULL_HANDLE)
+        vmaDestroyImage(allocator_, r.image, r.image_allocation);
+      if (r.buffer != VK_NULL_HANDLE)
+        vmaDestroyBuffer(allocator_, r.buffer, r.buffer_allocation);
       return true;
     });
   }
 
   void DestroyGuestOutputWrapper(NrTextureVulkan* wrapper) {
     RetireFramebuffersForView(wrapper->attachment_view);
-    if (cmd_.rt_color_ == wrapper) cmd_.rt_color_ = nullptr;
+    if (cmd_.rt_color_ == wrapper)
+      cmd_.rt_color_ = nullptr;
     std::erase(pending_clear_textures_, wrapper);
     delete wrapper;  // image + view are presenter-owned
   }
@@ -1886,7 +1924,8 @@ class NrDeviceVulkan : public nrhi::Device {
   // barrier queue - the simplest arrangement that needs no extra queue
   // submission machinery.
   void EnsureWhiteTexture() {
-    if (white_view_ != VK_NULL_HANDLE) return;
+    if (white_view_ != VK_NULL_HANDLE)
+      return;
     VkImageCreateInfo image_info = {};
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image_info.imageType = VK_IMAGE_TYPE_2D;
@@ -1913,8 +1952,8 @@ class NrDeviceVulkan : public nrhi::Device {
     staging_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     staging_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VmaAllocationCreateInfo staging_alloc_info = {};
-    staging_alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
-                               VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    staging_alloc_info.flags =
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     staging_alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
     staging_alloc_info.requiredFlags =
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1939,9 +1978,8 @@ class NrDeviceVulkan : public nrhi::Device {
     cp_->deferred_command_buffer().CmdVkCopyBufferToImage(
         white_staging_, white_image_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     cp_->PushImageMemoryBarrier(white_image_, range, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     cp_->SubmitBarriers(true);
 
@@ -1951,8 +1989,8 @@ class NrDeviceVulkan : public nrhi::Device {
     view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
     view_info.subresourceRange = range;
-    if (vulkan_device_->functions().vkCreateImageView(vulkan_device_->device(), &view_info,
-                                                      nullptr, &white_view_) != VK_SUCCESS) {
+    if (vulkan_device_->functions().vkCreateImageView(vulkan_device_->device(), &view_info, nullptr,
+                                                      &white_view_) != VK_SUCCESS) {
       REXLOG_ERROR("nrhi-vulkan: white fallback view creation failed");
       white_view_ = VK_NULL_HANDLE;
     }
@@ -2022,7 +2060,7 @@ class NrDeviceVulkan : public nrhi::Device {
       }
     }
     raster.polygonMode = VK_POLYGON_MODE_FILL;
-    raster.cullMode = p.cull == nrhi::CullMode::kFront   ? VK_CULL_MODE_FRONT_BIT
+    raster.cullMode = p.cull == nrhi::CullMode::kFront  ? VK_CULL_MODE_FRONT_BIT
                       : p.cull == nrhi::CullMode::kBack ? VK_CULL_MODE_BACK_BIT
                                                         : VK_CULL_MODE_NONE;
     // Matches D3D FrontCounterClockwise=FALSE under the negative-viewport
@@ -2057,8 +2095,7 @@ class NrDeviceVulkan : public nrhi::Device {
       blend.pAttachments = &blend_attachment;
     }
 
-    const VkDynamicState dynamic_states[2] = {VK_DYNAMIC_STATE_VIEWPORT,
-                                              VK_DYNAMIC_STATE_SCISSOR};
+    const VkDynamicState dynamic_states[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     VkPipelineDynamicStateCreateInfo dynamic = {};
     dynamic.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamic.dynamicStateCount = 2;
@@ -2068,7 +2105,8 @@ class NrDeviceVulkan : public nrhi::Device {
         p.rtv_format != Format::kUnknown ? ToVkFormat(p.rtv_format) : VK_FORMAT_UNDEFINED,
         p.dsv_format != Format::kUnknown ? ToVkFormat(p.dsv_format) : VK_FORMAT_UNDEFINED,
         p.sample_count, false, false);
-    if (render_pass == VK_NULL_HANDLE) return VK_NULL_HANDLE;
+    if (render_pass == VK_NULL_HANDLE)
+      return VK_NULL_HANDLE;
 
     VkGraphicsPipelineCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -2202,12 +2240,12 @@ void NrCmdVulkan::EndFrame() {
     }
     // FlushPendingClear via Barrier-style path: an empty CLEAR pass.
     const bool is_depth = t->aspect == VK_IMAGE_ASPECT_DEPTH_BIT;
-    device->EnsureLayout(t, ToStateInfo(is_depth ? ResourceState::kDepthWrite
-                                                 : ResourceState::kRenderTarget));
+    device->EnsureLayout(
+        t, ToStateInfo(is_depth ? ResourceState::kDepthWrite : ResourceState::kRenderTarget));
     device->cp()->SubmitBarriers(true);
-    VkRenderPass render_pass = device->GetRenderPass(
-        is_depth ? VK_FORMAT_UNDEFINED : t->vk_format, is_depth ? t->vk_format : VK_FORMAT_UNDEFINED,
-        t->desc.sample_count, !is_depth, is_depth);
+    VkRenderPass render_pass = device->GetRenderPass(is_depth ? VK_FORMAT_UNDEFINED : t->vk_format,
+                                                     is_depth ? t->vk_format : VK_FORMAT_UNDEFINED,
+                                                     t->desc.sample_count, !is_depth, is_depth);
     VkImageView view = device->GetAttachmentView(t);
     if (render_pass != VK_NULL_HANDLE && view != VK_NULL_HANDLE) {
       VkFramebuffer framebuffer =
@@ -2241,13 +2279,15 @@ void NrCmdVulkan::EndFrame() {
 }
 
 void NrCmdVulkan::EndRenderPassIfOpen() {
-  if (!render_pass_open_) return;
+  if (!render_pass_open_)
+    return;
   device->cp()->deferred_command_buffer().CmdVkEndRenderPass();
   render_pass_open_ = false;
 }
 
 bool NrCmdVulkan::EnsureRenderPassOpen() {
-  if (render_pass_open_) return true;
+  if (render_pass_open_)
+    return true;
   NrProfScope prof_scope(device->prof_.pass_open);
   if (rt_color_ == nullptr && rt_depth_ == nullptr) {
     static bool no_targets_logged = false;
@@ -2270,13 +2310,14 @@ bool NrCmdVulkan::EnsureRenderPassOpen() {
 
   const bool color_clear = rt_color_ != nullptr && rt_color_->pending_clear;
   const bool depth_clear = rt_depth_ != nullptr && rt_depth_->pending_clear;
-  const uint32_t samples = rt_color_ != nullptr ? rt_color_->desc.sample_count
-                                                : rt_depth_->desc.sample_count;
-  VkRenderPass render_pass = device->GetRenderPass(
-      rt_color_ != nullptr ? rt_color_->vk_format : VK_FORMAT_UNDEFINED,
-      rt_depth_ != nullptr ? rt_depth_->vk_format : VK_FORMAT_UNDEFINED, samples, color_clear,
-      depth_clear);
-  if (render_pass == VK_NULL_HANDLE) return false;
+  const uint32_t samples =
+      rt_color_ != nullptr ? rt_color_->desc.sample_count : rt_depth_->desc.sample_count;
+  VkRenderPass render_pass =
+      device->GetRenderPass(rt_color_ != nullptr ? rt_color_->vk_format : VK_FORMAT_UNDEFINED,
+                            rt_depth_ != nullptr ? rt_depth_->vk_format : VK_FORMAT_UNDEFINED,
+                            samples, color_clear, depth_clear);
+  if (render_pass == VK_NULL_HANDLE)
+    return false;
   VkImageView color_view =
       rt_color_ != nullptr ? device->GetAttachmentView(rt_color_) : VK_NULL_HANDLE;
   VkImageView depth_view =
@@ -2285,7 +2326,8 @@ bool NrCmdVulkan::EnsureRenderPassOpen() {
   const uint32_t height = rt_color_ != nullptr ? rt_color_->desc.height : rt_depth_->desc.height;
   VkFramebuffer framebuffer =
       device->GetFramebuffer(render_pass, color_view, depth_view, width, height);
-  if (framebuffer == VK_NULL_HANDLE) return false;
+  if (framebuffer == VK_NULL_HANDLE)
+    return false;
 
   VkClearValue clear_values[2];
   uint32_t clear_value_count = 0;
@@ -2322,8 +2364,10 @@ bool NrCmdVulkan::EnsureRenderPassOpen() {
 }
 
 bool NrCmdVulkan::EnsureDrawState() {
-  if (layout_ == nullptr || pipeline_ == nullptr) return false;
-  if (!EnsureRenderPassOpen()) return false;
+  if (layout_ == nullptr || pipeline_ == nullptr)
+    return false;
+  if (!EnsureRenderPassOpen())
+    return false;
   DeferredCommandBuffer& cmd = device->cp()->deferred_command_buffer();
 
   VkPipeline variant = device->GetPipelineVariant(pipeline_, topology_);
@@ -2334,8 +2378,7 @@ bool NrCmdVulkan::EnsureDrawState() {
 
   // Root constants: copy the shadow block into a fresh ring slice when
   // dirty; the slice offset rides the kConstants dynamic offset.
-  if (layout_->constants_param >= 0 &&
-      (constants_dirty_ || constants_ring_offset_ == ~0u)) {
+  if (layout_->constants_param >= 0 && (constants_dirty_ || constants_ring_offset_ == ~0u)) {
     constants_ring_offset_ = device->AllocateConstantSlice(
         constants_shadow_, std::max(layout_->constants_size_bytes, 4u));
     constants_dirty_ = false;
@@ -2350,7 +2393,8 @@ bool NrCmdVulkan::EnsureDrawState() {
       uint32_t dynamic_offsets[nrhi::kMaxBindingParams];
       for (uint32_t i = 0; i < layout_->param_count; ++i) {
         const NrBindingLayoutVulkan::ParamInfo& p = layout_->params[i];
-        if (p.kind == nrhi::BindingParamKind::kTextureTable) continue;
+        if (p.kind == nrhi::BindingParamKind::kTextureTable)
+          continue;
         dynamic_offsets[p.set0_binding] =
             p.kind == nrhi::BindingParamKind::kConstants
                 ? (constants_ring_offset_ != ~0u ? constants_ring_offset_ : 0)
@@ -2365,8 +2409,10 @@ bool NrCmdVulkan::EnsureDrawState() {
 
   for (uint32_t i = 0; i < layout_->param_count; ++i) {
     const NrBindingLayoutVulkan::ParamInfo& p = layout_->params[i];
-    if (p.kind != nrhi::BindingParamKind::kTextureTable) continue;
-    if (!table_dirty_[p.table_index]) continue;
+    if (p.kind != nrhi::BindingParamKind::kTextureTable)
+      continue;
+    if (!table_dirty_[p.table_index])
+      continue;
     VkDescriptorSet set = device->GetTableSet(layout_->table_layouts[p.table_index],
                                               table_views_[p.table_index], p.table_size);
     if (set != VK_NULL_HANDLE) {
@@ -2403,13 +2449,15 @@ void NrCmdVulkan::SetPipeline(nrhi::Pipeline* pipeline) {
 void NrCmdVulkan::SetRootConstants(uint32_t param, uint32_t count, const void* values,
                                    uint32_t dest_offset_in_values) {
   (void)param;
-  if (dest_offset_in_values + count > 64) return;
+  if (dest_offset_in_values + count > 64)
+    return;
   std::memcpy(constants_shadow_ + dest_offset_in_values, values, count * sizeof(uint32_t));
   constants_dirty_ = true;
 }
 
 void NrCmdVulkan::SetConstantBuffer(uint32_t param, nrhi::Buffer* buffer, uint64_t offset) {
-  if (layout_ == nullptr || param >= layout_->param_count) return;
+  if (layout_ == nullptr || param >= layout_->param_count)
+    return;
   const NrBindingLayoutVulkan::ParamInfo& p = layout_->params[param];
   set0_buffers_[p.set0_binding] = static_cast<NrBufferVulkan*>(buffer);
   set0_offsets_[p.set0_binding] = uint32_t(offset);
@@ -2431,9 +2479,11 @@ void NrCmdVulkan::SetTexturePair(uint32_t param, nrhi::TextureView* first,
 }
 
 void NrCmdVulkan::SetTextures(uint32_t param, nrhi::TextureView* const* views, uint32_t count) {
-  if (layout_ == nullptr || param >= layout_->param_count) return;
+  if (layout_ == nullptr || param >= layout_->param_count)
+    return;
   const NrBindingLayoutVulkan::ParamInfo& p = layout_->params[param];
-  if (p.kind != nrhi::BindingParamKind::kTextureTable) return;
+  if (p.kind != nrhi::BindingParamKind::kTextureTable)
+    return;
   // Consecutive draws mostly rebind the same tuple (shadow atlas, cube map,
   // white fallback); leaving the table clean skips the per-draw descriptor
   // set lookup and rebind entirely.
@@ -2441,8 +2491,7 @@ void NrCmdVulkan::SetTextures(uint32_t param, nrhi::TextureView* const* views, u
   for (uint32_t i = 0; i < p.table_size; ++i) {
     // Missing tail entries (table declares N, bound M<N) and null entries
     // fall back to the backend's 1x1 white.
-    NrTextureViewVulkan* view =
-        i < count ? static_cast<NrTextureViewVulkan*>(views[i]) : nullptr;
+    NrTextureViewVulkan* view = i < count ? static_cast<NrTextureViewVulkan*>(views[i]) : nullptr;
     if (table_views_[p.table_index][i] != view) {
       table_views_[p.table_index][i] = view;
       changed = true;
@@ -2545,14 +2594,16 @@ void NrCmdVulkan::SetPrimitiveTopology(nrhi::PrimitiveTopology topology) {
 }
 
 void NrCmdVulkan::Draw(uint32_t vertex_count, uint32_t start_vertex) {
-  if (!EnsureDrawState()) return;
+  if (!EnsureDrawState())
+    return;
   device->cp()->deferred_command_buffer().CmdVkDraw(vertex_count, 1, start_vertex, 0);
 }
 
 void NrCmdVulkan::DrawIndexed(uint32_t index_count, uint32_t start_index, int32_t base_vertex) {
-  if (!EnsureDrawState()) return;
-  device->cp()->deferred_command_buffer().CmdVkDrawIndexed(index_count, 1, start_index,
-                                                           base_vertex, 0);
+  if (!EnsureDrawState())
+    return;
+  device->cp()->deferred_command_buffer().CmdVkDrawIndexed(index_count, 1, start_index, base_vertex,
+                                                           0);
 }
 
 void NrCmdVulkan::CopyBufferToTexture(nrhi::Texture* dst, uint32_t mip, uint32_t array_slice,
@@ -2634,12 +2685,12 @@ void NrCmdVulkan::Barrier(nrhi::Texture* texture, ResourceState before, Resource
       after != ResourceState::kDepthWrite) {
     EndRenderPassIfOpen();
     const bool is_depth = t->aspect == VK_IMAGE_ASPECT_DEPTH_BIT;
-    device->EnsureLayout(t, ToStateInfo(is_depth ? ResourceState::kDepthWrite
-                                                 : ResourceState::kRenderTarget));
+    device->EnsureLayout(
+        t, ToStateInfo(is_depth ? ResourceState::kDepthWrite : ResourceState::kRenderTarget));
     device->cp()->SubmitBarriers(true);
-    VkRenderPass render_pass = device->GetRenderPass(
-        is_depth ? VK_FORMAT_UNDEFINED : t->vk_format,
-        is_depth ? t->vk_format : VK_FORMAT_UNDEFINED, t->desc.sample_count, !is_depth, is_depth);
+    VkRenderPass render_pass = device->GetRenderPass(is_depth ? VK_FORMAT_UNDEFINED : t->vk_format,
+                                                     is_depth ? t->vk_format : VK_FORMAT_UNDEFINED,
+                                                     t->desc.sample_count, !is_depth, is_depth);
     VkImageView view = device->GetAttachmentView(t);
     if (render_pass != VK_NULL_HANDLE && view != VK_NULL_HANDLE) {
       VkFramebuffer framebuffer =
@@ -2678,9 +2729,8 @@ void NrCmdVulkan::Barrier(nrhi::Texture* texture, ResourceState before, Resource
   const StateInfo src = ToStateInfo(before);
   const bool undefined = t->current_layout == VK_IMAGE_LAYOUT_UNDEFINED;
   device->cp()->PushImageMemoryBarrier(
-      t->image, t->WholeRange(),
-      undefined ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : src.stage_mask, dst.stage_mask,
-      undefined ? 0 : src.access_mask, dst.access_mask,
+      t->image, t->WholeRange(), undefined ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : src.stage_mask,
+      dst.stage_mask, undefined ? 0 : src.access_mask, dst.access_mask,
       // The tracked layout is the authoritative oldLayout: first-use
       // transitions come from UNDEFINED and discard.
       t->current_layout, dst.layout);

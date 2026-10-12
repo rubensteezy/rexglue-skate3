@@ -85,8 +85,7 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
   };
 
   VulkanRenderTargetCache(const RegisterFile& register_file, const memory::Memory& memory,
-                          TraceWriter& trace_writer, uint32_t draw_resolution_scale_x,
-                          uint32_t draw_resolution_scale_y,
+                          uint32_t draw_resolution_scale_x, uint32_t draw_resolution_scale_y,
                           VulkanCommandProcessor& command_processor);
   ~VulkanRenderTargetCache();
 
@@ -108,14 +107,8 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
   // frame for calling.
   bool Resolve(const memory::Memory& memory, VulkanSharedMemory& shared_memory,
                VulkanTextureCache& texture_cache, uint32_t& written_address_out,
-               uint32_t& written_length_out,
-               bool debug_log_team_profile_background_trace = false);
+               uint32_t& written_length_out, bool debug_log_team_profile_background_trace = false);
   void DebugLogLastUpdateRenderTargetsForTeamProfileBackgroundDraw(uint64_t frame) const;
-
-  // Returns true if any downloads were submitted to the command processor.
-  bool InitializeTraceSubmitDownloads();
-  void InitializeTraceCompleteDownloads();
-  void RestoreEdramSnapshot(const void* snapshot);
 
   bool Update(bool is_rasterization_done, reg::RB_DEPTHCONTROL normalized_depth_control,
               uint32_t normalized_color_mask, const Shader& vertex_shader) override;
@@ -217,9 +210,7 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
     kComputeRead,
     // Resolve - copying from host render targets.
     kComputeWrite,
-    // Trace recording.
     kTransferRead,
-    // Trace playback.
     kTransferWrite,
   };
 
@@ -261,7 +252,6 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
           EdramBufferModificationStatus::kViaFragmentShaderInterlock);
 
   VulkanCommandProcessor& command_processor_;
-  TraceWriter& trace_writer_;
 
   Path path_ = Path::kHostRenderTargets;
 
@@ -958,14 +948,6 @@ class VulkanRenderTargetCache final : public RenderTargetCache {
   uint64_t direct_resolve_attempt_count_ = 0;
   uint64_t direct_resolve_success_count_ = 0;
   uint64_t direct_resolve_fallback_count_ = 0;
-
-  // For traces.
-  VkBuffer edram_snapshot_download_buffer_ = VK_NULL_HANDLE;
-  VkDeviceMemory edram_snapshot_download_buffer_memory_ = VK_NULL_HANDLE;
-  uint32_t edram_snapshot_download_buffer_memory_type_ = UINT32_MAX;
-  VkDeviceSize edram_snapshot_download_buffer_memory_size_ = 0;
-  std::unique_ptr<ui::vulkan::VulkanUploadBufferPool> edram_snapshot_restore_pool_;
-  void ResetTraceDownload();
 
   // For pixel (fragment) shader interlock.
 

@@ -399,16 +399,17 @@ inline void emitBranchWithBoundsCheck(BuilderContext& ctx, uint32_t target,
   if (auto* targetFn = ctx.graph().getFunction(target)) {
     REXCODEGEN_WARN("{} at {:X} branches outside function to {:X}", instr_name, ctx.base, target);
     ctx.println("\tif ({}) {{", condition);
+    ctx.emitCtx.reference(targetFn->name());
     ctx.println("\t\t{}(ctx, base);", targetFn->name());
     ctx.println("\t\treturn;");
     ctx.println("\t}}");
     return;
   }
 
-  REXCODEGEN_WARN("{} at {:X} branches outside function to unresolved {:X}", instr_name,
-                  ctx.base, target);
-  ctx.println("\tif ({}) REX_FATAL(\"Unresolved branch from 0x{:08X} to 0x{:08X}\");",
-              condition, ctx.base, target);
+  REXCODEGEN_WARN("{} at {:X} branches outside function to unresolved {:X}", instr_name, ctx.base,
+                  target);
+  ctx.println("\tif ({}) REX_FATAL(\"Unresolved branch from 0x{:08X} to 0x{:08X}\");", condition,
+              ctx.base, target);
 }
 
 //=============================================================================

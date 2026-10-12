@@ -37,8 +37,7 @@ DeferredCommandPerfCategory GetPerfCategory(DeferredCommandList::Command command
     case Command::kD3DClearRenderTargetView:
     case Command::kD3DClearUnorderedAccessViewUint:
     case Command::kD3DClearUnorderedAccessViewFloat:
-      return {CounterId::kDeferredClearCount, CounterId::kDeferredClearUs,
-              CounterId::kGpuClearUs};
+      return {CounterId::kDeferredClearCount, CounterId::kDeferredClearUs, CounterId::kGpuClearUs};
     case Command::kD3DResourceBarrier:
       return {CounterId::kDeferredBarrierCount, CounterId::kDeferredBarrierUs,
               CounterId::kGpuBarrierUs};
@@ -74,7 +73,9 @@ class DeferredCommandPerfScope {
   DeferredCommandPerfScope(D3D12CommandProcessor& command_processor,
                            ID3D12GraphicsCommandList* command_list,
                            DeferredCommandPerfCategory category)
-      : command_processor_(command_processor), command_list_(command_list), timer_(category.cpu_us) {
+      : command_processor_(command_processor),
+        command_list_(command_list),
+        timer_(category.cpu_us) {
     rex::perf::IncrementCounter(rex::perf::CounterId::kDeferredCommands);
     rex::perf::IncrementCounter(category.count);
     if (category.gpu_us != rex::perf::CounterId::kCount) {

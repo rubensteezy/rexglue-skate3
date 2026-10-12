@@ -23,11 +23,9 @@ void DestroyNativeRhiDevice(nrhi::Device* device);
 // Per-frame, inside the guest-output refresher: wraps the presenter's guest
 // output resource (cached by identity), drains completed retirement, and
 // returns the frame Cmd. guest_output_out receives the wrapped texture.
-nrhi::Cmd* NativeRhiBeginFrame(nrhi::Device* device,
-                               ID3D12Resource* guest_output_resource,
+nrhi::Cmd* NativeRhiBeginFrame(nrhi::Device* device, ID3D12Resource* guest_output_resource,
                                DXGI_FORMAT guest_output_format,
-                               D3D12_RESOURCE_STATES guest_output_internal_state,
-                               uint32_t width, uint32_t height,
-                               nrhi::Texture** guest_output_out);
+                               D3D12_RESOURCE_STATES guest_output_internal_state, uint32_t width,
+                               uint32_t height, nrhi::Texture** guest_output_out);
 
 }  // namespace rex::graphics::d3d12

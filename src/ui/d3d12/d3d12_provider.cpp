@@ -355,10 +355,9 @@ bool D3D12Provider::Initialize() {
     IDXGIAdapter1* match_adapter;
     for (uint32_t i = 0; dxgi_factory->EnumAdapters1(i, &match_adapter) == S_OK; ++i) {
       DXGI_ADAPTER_DESC1 match_desc;
-      const bool matched =
-          SUCCEEDED(match_adapter->GetDesc1(&match_desc)) &&
-          match_desc.AdapterLuid.LowPart == adapter_desc.AdapterLuid.LowPart &&
-          match_desc.AdapterLuid.HighPart == adapter_desc.AdapterLuid.HighPart;
+      const bool matched = SUCCEEDED(match_adapter->GetDesc1(&match_desc)) &&
+                           match_desc.AdapterLuid.LowPart == adapter_desc.AdapterLuid.LowPart &&
+                           match_desc.AdapterLuid.HighPart == adapter_desc.AdapterLuid.HighPart;
       match_adapter->Release();
       if (matched) {
         device_list.active_index = int32_t(i);

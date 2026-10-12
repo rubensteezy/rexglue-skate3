@@ -310,12 +310,12 @@ enum class Opcode : uint16_t {
   vmsum4fp128,  // Vector multiply-sum 4-element (128-reg)
 
   // Vector integer arithmetic
-  vaddubm,  // Vector add unsigned byte modulo
-  vadduhm,  // Vector add unsigned halfword modulo
-  vadduwm,  // Vector add unsigned word modulo
-  vsububm,  // Vector subtract unsigned byte modulo
-  vsubuhm,  // Vector subtract unsigned halfword modulo
-  vsubuwm,  // Vector subtract unsigned word modulo
+  vaddubm,     // Vector add unsigned byte modulo
+  vadduhm,     // Vector add unsigned halfword modulo
+  vadduwm,     // Vector add unsigned word modulo
+  vsububm,     // Vector subtract unsigned byte modulo
+  vsubuhm,     // Vector subtract unsigned halfword modulo
+  vsubuwm,     // Vector subtract unsigned word modulo
   vmhaddshs,   // Vector multiply-high and add signed halfword saturate
   vmhraddshs,  // Vector multiply-high round and add signed halfword saturate
   vmladduhm,   // Vector multiply-low and add unsigned halfword modulo
@@ -325,15 +325,15 @@ enum class Opcode : uint16_t {
   vmsumuhs,    // Vector multiply-sum unsigned halfword saturate
   vmsumshm,    // Vector multiply-sum signed halfword modulo
   vmsumshs,    // Vector multiply-sum signed halfword saturate
-  vmuloub,  // Vector multiply odd unsigned byte
-  vmulouh,  // Vector multiply odd unsigned halfword
-  vmulouw,  // Vector multiply odd unsigned word
-  vmuleub,  // Vector multiply even unsigned byte
-  vmuleuh,  // Vector multiply even unsigned halfword
-  vmuleuw,  // Vector multiply even unsigned word
-  vavgub,   // Vector average unsigned byte
-  vavguh,   // Vector average unsigned halfword
-  vavguw,   // Vector average unsigned word
+  vmuloub,     // Vector multiply odd unsigned byte
+  vmulouh,     // Vector multiply odd unsigned halfword
+  vmulouw,     // Vector multiply odd unsigned word
+  vmuleub,     // Vector multiply even unsigned byte
+  vmuleuh,     // Vector multiply even unsigned halfword
+  vmuleuw,     // Vector multiply even unsigned word
+  vavgub,      // Vector average unsigned byte
+  vavguh,      // Vector average unsigned halfword
+  vavguw,      // Vector average unsigned word
 
   // Vector logical
   vand,   // Vector AND
@@ -435,23 +435,23 @@ enum class Opcode : uint16_t {
   vspltisw128,  // Vector splat immediate signed word (128-reg)
 
   // Vector shift/rotate
-  vslb,   // Vector shift left byte
-  vslh,   // Vector shift left halfword
-  vslw,   // Vector shift left word
-  vsrb,   // Vector shift right byte
-  vsrh,   // Vector shift right halfword
-  vsrw,   // Vector shift right word
-  vsrab,  // Vector shift right algebraic byte
-  vsrah,  // Vector shift right algebraic halfword
-  vsraw,  // Vector shift right algebraic word
-  vrlb,   // Vector rotate left byte
-  vrlh,   // Vector rotate left halfword
-  vrlw,   // Vector rotate left word
-  vsl,    // Vector shift left (128-bit)
-  vsr,    // Vector shift right (128-bit)
-  vslo,   // Vector shift left by octet
-  vsro,   // Vector shift right by octet
-  vsldoi, // Vector shift left double by octet immediate
+  vslb,    // Vector shift left byte
+  vslh,    // Vector shift left halfword
+  vslw,    // Vector shift left word
+  vsrb,    // Vector shift right byte
+  vsrh,    // Vector shift right halfword
+  vsrw,    // Vector shift right word
+  vsrab,   // Vector shift right algebraic byte
+  vsrah,   // Vector shift right algebraic halfword
+  vsraw,   // Vector shift right algebraic word
+  vrlb,    // Vector rotate left byte
+  vrlh,    // Vector rotate left halfword
+  vrlw,    // Vector rotate left word
+  vsl,     // Vector shift left (128-bit)
+  vsr,     // Vector shift right (128-bit)
+  vslo,    // Vector shift left by octet
+  vsro,    // Vector shift right by octet
+  vsldoi,  // Vector shift left double by octet immediate
 
   // Vector conversion
   vcfux,   // Vector convert from unsigned fixed-point word

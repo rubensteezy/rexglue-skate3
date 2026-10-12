@@ -45,8 +45,7 @@ namespace filesystem {
 std::filesystem::path GetExecutablePath() {
   std::wstring path(MAX_PATH, L'\0');
   for (;;) {
-    const DWORD length =
-        GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+    const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
     if (length == 0) {
       return {};
     }
@@ -89,40 +88,6 @@ bool CreateEmptyFile(const std::filesystem::path& path) {
   }
 
   CloseHandle(handle);
-  return true;
-}
-
-FILE* OpenFile(const std::filesystem::path& path, const std::string_view mode) {
-  // Dumb, but OK.
-  const auto wmode = rex::string::to_utf16(mode);
-  return _wfopen(path.c_str(), reinterpret_cast<const wchar_t*>(wmode.c_str()));
-}
-
-bool Seek(FILE* file, int64_t offset, int origin) {
-  return _fseeki64(file, offset, origin) == 0;
-}
-
-int64_t Tell(FILE* file) {
-  return _ftelli64(file);
-}
-
-bool TruncateStdioFile(FILE* file, uint64_t length) {
-  // Flush is necessary - if not flushing, stream position may be out of sync.
-  if (fflush(file)) {
-    return false;
-  }
-  int64_t position = Tell(file);
-  if (position < 0) {
-    return false;
-  }
-  if (_chsize_s(_fileno(file), int64_t(length))) {
-    return false;
-  }
-  if (uint64_t(position) > length) {
-    if (!Seek(file, 0, SEEK_END)) {
-      return false;
-    }
-  }
   return true;
 }
 
@@ -188,7 +153,8 @@ class Win32FileHandle : public FileHandle {
 };
 
 std::unique_ptr<FileHandle> FileHandle::OpenExisting(const std::filesystem::path& path,
-                                                     uint32_t desired_access) {
+                                                     uint32_t desired_access,
+                                                     bool allow_share_delete) {
   DWORD open_access = 0;
   if (desired_access & FileAccess::kGenericRead) {
     open_access |= GENERIC_READ;
@@ -212,6 +178,9 @@ std::unique_ptr<FileHandle> FileHandle::OpenExisting(const std::filesystem::path
     open_access |= FILE_APPEND_DATA;
   }
   DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+  if (allow_share_delete) {
+    share_mode |= FILE_SHARE_DELETE;
+  }
   // We assume we've already created the file in the caller.
   DWORD creation_disposition = OPEN_EXISTING;
   HANDLE handle = CreateFileW(path.c_str(), open_access, share_mode, nullptr, creation_disposition,

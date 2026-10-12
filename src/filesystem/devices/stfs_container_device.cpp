@@ -615,8 +615,7 @@ StfsContainerDevice::Error StfsContainerDevice::ReadSTFS() {
           remaining_size -= block_size;
           auto block_hash = GetBlockHash(block_index);
           if (!block_hash) {
-            REXFS_ERROR("STFS failed to read block hash for entry {} block {}", name,
-                        block_index);
+            REXFS_ERROR("STFS failed to read block hash for entry {} block {}", name, block_index);
             return Error::kErrorReadError;
           }
           block_index = block_hash->level0_next_block();

@@ -140,22 +140,22 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   int row_index_ = 0;
   bool editing_text_ = false;
   bool text_edit_focus_pending_ = false;
-  bool pad_active_ = false;      // last nav input came from a pad -> pad legend
+  bool pad_active_ = false;  // last nav input came from a pad -> pad legend
   uint16_t prev_pad_buttons_ = 0;
-  int held_dir_x_ = 0;           // current held direction (-1/0/1), for repeat
+  int held_dir_x_ = 0;  // current held direction (-1/0/1), for repeat
   int held_dir_y_ = 0;
   float repeat_timer_x_ = 0.0f;
   float repeat_timer_y_ = 0.0f;
   float highlight_anim_y_ = -1.0f;  // smoothed selection highlight position
   float rail_anim_y_ = -1.0f;
-  float content_scroll_ = 0.0f;       // scroll TARGET, locked to row boundaries
+  float content_scroll_ = 0.0f;        // scroll TARGET, locked to row boundaries
   float content_scroll_anim_ = -1.0f;  // drawn scroll, chases the target
   float wheel_accum_ = 0.0f;           // fractional wheel deltas -> whole notches
   // Swallow the first frame's cursor delta after Show: the pre-open cursor
   // position (or a cursor-mode warp) otherwise reads as mouse motion and
   // steals focus from the rail to whatever row it lands on.
   bool just_shown_ = false;
-  float mouse_x_ = -1.0f;        // last mouse position, to detect real motion
+  float mouse_x_ = -1.0f;  // last mouse position, to detect real motion
   float mouse_y_ = -1.0f;
 };
 

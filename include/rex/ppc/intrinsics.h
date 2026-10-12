@@ -34,12 +34,11 @@ namespace rex::ppc {
 
 inline uint32_t ppc_vrsqrtefp_bits(uint32_t bits) {
   static constexpr uint32_t table[32] = {
-      0x0568B4FD, 0x04F3AF97, 0x048DAAA5, 0x0435A618, 0x03E7A1E4, 0x03A29DFE,
-      0x03659A5C, 0x032E96F8, 0x02FC93CA, 0x02D090CE, 0x02A88DFE, 0x02838B57,
-      0x026188D4, 0x02438673, 0x02268431, 0x020B820B, 0x03D27FFA, 0x03807C29,
-      0x033878AA, 0x02F97572, 0x02C27279, 0x02926FB7, 0x02666D26, 0x023F6AC0,
-      0x021D6881, 0x01FD6665, 0x01E16468, 0x01C76287, 0x01AF60C1, 0x01995F12,
-      0x01855D79, 0x01735BF4,
+      0x0568B4FD, 0x04F3AF97, 0x048DAAA5, 0x0435A618, 0x03E7A1E4, 0x03A29DFE, 0x03659A5C,
+      0x032E96F8, 0x02FC93CA, 0x02D090CE, 0x02A88DFE, 0x02838B57, 0x026188D4, 0x02438673,
+      0x02268431, 0x020B820B, 0x03D27FFA, 0x03807C29, 0x033878AA, 0x02F97572, 0x02C27279,
+      0x02926FB7, 0x02666D26, 0x023F6AC0, 0x021D6881, 0x01FD6665, 0x01E16468, 0x01C76287,
+      0x01AF60C1, 0x01995F12, 0x01855D79, 0x01735BF4,
   };
 
   uint32_t sign = bits >> 31;
@@ -354,8 +353,8 @@ inline simde__m128i simde_mm_vsl(simde__m128i a, simde__m128i b) {
   int64x2_t shift_vector = vdupq_n_s64(shift);
   uint64x2_t low_shifted = vshlq_u64(va, shift_vector);
 
-  // For the carry, we need right shift
-  int64x2_t rshift_vector = vdupq_n_s64(64 - shift);
+  // NEON vshl uses negative counts for right shifts.
+  int64x2_t rshift_vector = vdupq_n_s64(shift - 64);
   uint64x2_t high_carry = vshlq_u64(va, rshift_vector);
 
   // Combine results

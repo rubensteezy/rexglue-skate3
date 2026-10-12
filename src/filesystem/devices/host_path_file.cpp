@@ -30,9 +30,8 @@ bool LooksLikeSkaterPreviewAssetPath(std::string_view path) {
   std::transform(lower.begin(), lower.end(), lower.begin(),
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   static constexpr std::string_view kNeedles[] = {
-      "import_skater",    "team_management", "preset",          "skater",
-      "preview",          "fedynamic",       "fedata",          "fetexture",
-      "createacharacter", "db.big",          "data/fe",         "data\\fe",
+      "import_skater", "team_management", "preset",           "skater", "preview", "fedynamic",
+      "fedata",        "fetexture",       "createacharacter", "db.big", "data/fe", "data\\fe",
   };
   for (std::string_view needle : kNeedles) {
     if (lower.find(needle) != std::string::npos) {
@@ -95,10 +94,9 @@ X_STATUS HostPathFile::ReadSync(std::span<uint8_t> buffer, size_t byte_offset,
     }
     if (entry_ && LooksLikeSkaterPreviewAssetPath(entry_->absolute_path()) &&
         ConsumeFeAssetLogBudget()) {
-      REXFS_WARN(
-          "FE asset diagnostic: op=read, path='{}', offset={:X}, requested={:X}, read={:X}",
-          entry_->absolute_path(), byte_offset, buffer.size(),
-          out_bytes_read ? *out_bytes_read : 0);
+      REXFS_WARN("FE asset diagnostic: op=read, path='{}', offset={:X}, requested={:X}, read={:X}",
+                 entry_->absolute_path(), byte_offset, buffer.size(),
+                 out_bytes_read ? *out_bytes_read : 0);
     }
     return X_STATUS_SUCCESS;
   } else {

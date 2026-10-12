@@ -28,8 +28,8 @@ int64_t Counter(rex::perf::CounterId id) {
 
 void DrawBucketRow(const char* label, rex::perf::CounterId calls, rex::perf::CounterId vertices,
                    rex::perf::CounterId primitives) {
-  ImGui::Text("%-6s %6" PRId64 " %9" PRId64 " %9" PRId64, label, Counter(calls),
-              Counter(vertices), Counter(primitives));
+  ImGui::Text("%-6s %6" PRId64 " %9" PRId64 " %9" PRId64, label, Counter(calls), Counter(vertices),
+              Counter(primitives));
 }
 
 float CounterMs(rex::perf::CounterId id) {
@@ -119,8 +119,7 @@ void DebugOverlayDialog::OnDraw(ImGuiIO& io) {
                 CounterMs(rex::perf::CounterId::kDrawStageSubmitUs));
 
     ImGui::SeparatorText("D3D12 GPU ms");
-    ImGui::Text("Main: %.3f  Depth: %.3f  NoPS: %.3f",
-                CounterMs(rex::perf::CounterId::kGpuMainUs),
+    ImGui::Text("Main: %.3f  Depth: %.3f  NoPS: %.3f", CounterMs(rex::perf::CounterId::kGpuMainUs),
                 CounterMs(rex::perf::CounterId::kGpuDepthUs),
                 CounterMs(rex::perf::CounterId::kGpuNoPixelShaderUs));
     ImGui::Text("Copy: %.3f  MemExp: %.3f  Timed: %" PRId64,
@@ -165,10 +164,10 @@ void DebugOverlayDialog::OnDraw(ImGuiIO& io) {
                 CounterMs(rex::perf::CounterId::kTextureCommitLoadUs),
                 CounterMs(rex::perf::CounterId::kTextureLoadBackendUs),
                 CounterMs(rex::perf::CounterId::kTextureScaledResolveCommitUs));
-    ImGui::Text("Committed: %" PRId64 "  LoadBytes: %.2f MB",
-                Counter(rex::perf::CounterId::kTextureLoadsCommitted),
-                static_cast<double>(Counter(rex::perf::CounterId::kTextureLoadBytes)) /
-                    (1024.0 * 1024.0));
+    ImGui::Text(
+        "Committed: %" PRId64 "  LoadBytes: %.2f MB",
+        Counter(rex::perf::CounterId::kTextureLoadsCommitted),
+        static_cast<double>(Counter(rex::perf::CounterId::kTextureLoadBytes)) / (1024.0 * 1024.0));
 
     // Audio
     ImGui::Text("XMA: %" PRId64 "  Lat: %.1fms  BufQ: %" PRId64,
@@ -210,9 +209,9 @@ void DebugOverlayDialog::OnDraw(ImGuiIO& io) {
   ImGui::SetNextWindowPos(ImVec2((io.DisplaySize.x - text_size.x - padding) * 0.5f,
                                  io.DisplaySize.y - text_size.y - bottom_offset));
   ImGui::SetNextWindowSize(ImVec2(0, 0));
-  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+  ImGui::PushStyleColor(ImGuiCol_Text, imgui_drawer()->style().debug.muted_text);
   if (ImGui::Begin("##watermark", nullptr,
-                       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                   ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                        ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::TextUnformatted(build_stamp);

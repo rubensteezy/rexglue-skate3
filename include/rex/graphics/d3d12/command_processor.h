@@ -63,12 +63,6 @@ class D3D12CommandProcessor : public CommandProcessor {
   void InitializeShaderStorage(const std::filesystem::path& cache_root, uint32_t title_id,
                                bool blocking) override;
 
-  void RequestFrameTrace(const std::filesystem::path& root_path) override;
-
-  void TracePlaybackWroteMemory(uint32_t base_ptr, uint32_t length) override;
-
-  void RestoreEdramSnapshot(const void* snapshot) override;
-
   ui::d3d12::D3D12Provider& GetD3D12Provider() const {
     return *static_cast<ui::d3d12::D3D12Provider*>(graphics_system_->provider());
   }
@@ -234,8 +228,6 @@ class D3D12CommandProcessor : public CommandProcessor {
                  IndexBufferInfo* index_buffer_info, bool major_mode_explicit) override;
   bool IssueCopy() override;
 
-  void InitializeTrace() override;
-
  private:
   static constexpr uint32_t kQueueFrames = 3;
 
@@ -378,8 +370,8 @@ class D3D12CommandProcessor : public CommandProcessor {
                                   Shader::HostVertexShaderType host_vertex_shader_type,
                                   uint32_t line_loop_closing_index, xenos::Endian index_endian,
                                   const draw_util::ViewportInfo& viewport_info,
-                                  uint32_t used_texture_mask,
-                                  uint64_t vertex_shader_hash, uint64_t pixel_shader_hash,
+                                  uint32_t used_texture_mask, uint64_t vertex_shader_hash,
+                                  uint64_t pixel_shader_hash,
                                   reg::RB_DEPTHCONTROL normalized_depth_control,
                                   uint32_t normalized_color_mask);
   bool UpdateBindings(const D3D12Shader* vertex_shader, const D3D12Shader* pixel_shader,
@@ -393,6 +385,7 @@ class D3D12CommandProcessor : public CommandProcessor {
   void EndGpuTimestampFrame();
   void ResolveGpuTimestampFrame(ID3D12GraphicsCommandList* command_list);
   void ProcessGpuTimestampResults();
+
  public:
   // Also used by the texture and render target caches for profiling regions.
   uint32_t BeginGpuTimestampedDraw(rex::perf::DrawBucket bucket);
@@ -401,8 +394,8 @@ class D3D12CommandProcessor : public CommandProcessor {
                                       rex::perf::CounterId counter_id);
   void EndGpuTimestampedCounter(ID3D12GraphicsCommandList* command_list,
                                 uint32_t start_query_index);
- private:
 
+ private:
   // Returns a buffer for reading GPU data back to the CPU. Assuming
   // synchronizing immediately after use. Always in COPY_DEST state.
   ID3D12Resource* RequestReadbackBuffer(uint32_t size);
@@ -734,9 +727,6 @@ class D3D12CommandProcessor : public CommandProcessor {
 
   D3D12_INDEX_BUFFER_VIEW current_index_buffer_view_ = {};
   bool current_index_buffer_view_valid_ = false;
-
-  std::atomic<bool> pix_capture_requested_ = false;
-  bool pix_capturing_;
 
   // The current fixed-function drawing state.
   D3D12_VIEWPORT ff_viewport_;

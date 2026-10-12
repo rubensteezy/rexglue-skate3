@@ -18,10 +18,9 @@ namespace rex::ui {
 class InstallWizardDialog final : public ImGuiDialog {
  public:
   using PickSourceCallback = std::function<std::filesystem::path()>;
-  using InstallCallback = std::function<bool(const std::filesystem::path& source,
-                                            std::atomic<uint64_t>& copied_bytes,
-                                            std::atomic<uint64_t>& total_bytes,
-                                            std::string& error)>;
+  using InstallCallback =
+      std::function<bool(const std::filesystem::path& source, std::atomic<uint64_t>& copied_bytes,
+                         std::atomic<uint64_t>& total_bytes, std::string& error)>;
   using CompleteCallback = std::function<void()>;
 
   InstallWizardDialog(ImGuiDrawer* drawer, std::string title, std::string section_label,

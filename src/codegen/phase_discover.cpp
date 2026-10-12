@@ -90,9 +90,8 @@ void discoverFunction(CodegenContext& ctx, uint32_t funcAddr,
       const uint32_t parentEnd = parentNode->base() + parentNode->size();
       if (parentEnd > funcAddr && parentEnd - funcAddr > pdataSize) {
         pdataSize = parentEnd - funcAddr;
-        REXCODEGEN_TRACE(
-            "Analyze: 0x{:08X} is chunk of 0x{:08X}, using parent-derived size={}",
-            funcAddr, parentAddr, pdataSize);
+        REXCODEGEN_TRACE("Analyze: 0x{:08X} is chunk of 0x{:08X}, using parent-derived size={}",
+                         funcAddr, parentAddr, pdataSize);
       }
     }
   }
@@ -132,7 +131,8 @@ void discoverFunction(CodegenContext& ctx, uint32_t funcAddr,
       }
     }
   }
-  auto result = discoverBlocks(decoded, funcAddr, *region, effectiveKnownFunctions, pdataSize);
+  auto result = discoverBlocks(decoded, funcAddr, *region, effectiveKnownFunctions, pdataSize,
+                               &ctx.Config().switchTables);
 
   if (result.blocks.empty()) {
     REXCODEGEN_WARN("Analyze: no blocks found for function 0x{:08X}", funcAddr);
@@ -297,9 +297,10 @@ void discoverAllFunctions(CodegenContext& ctx) {
       }
     }
     if (vtableLandings > 0) {
-      REXCODEGEN_INFO("Analyze: VTable scan promoted {} slots to chunks of "
-                      "their containing functions (multi-entry-point)",
-                      vtableLandings);
+      REXCODEGEN_INFO(
+          "Analyze: VTable scan promoted {} slots to chunks of "
+          "their containing functions (multi-entry-point)",
+          vtableLandings);
     }
 
     REXCODEGEN_INFO("Analyze: VTable scan found {} vtables, {} new functions", vtables.size(),

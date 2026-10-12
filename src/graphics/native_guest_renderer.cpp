@@ -95,8 +95,7 @@ bool HasNativeGuestOutputPostProcessor() {
 }
 
 void InvokeNativeGuestOutputPostProcessor(const NativeGuestOutputRenderContext& context) {
-  NativeGuestOutputPostProcessor post_processor =
-      g_post_processor.load(std::memory_order_acquire);
+  NativeGuestOutputPostProcessor post_processor = g_post_processor.load(std::memory_order_acquire);
   if (post_processor == nullptr) {
     return;
   }
@@ -131,8 +130,7 @@ bool ApplyNativeGuestOutputWideAspect(uint32_t& guest_output_width, uint32_t gue
                                       uint32_t& display_width, uint32_t& display_height) {
   const double aspect = g_wide_aspect.load(std::memory_order_relaxed);
   if (aspect <= 0.0 || !guest_output_width || !guest_output_height ||
-      !HasNativeGuestOutputRenderer() ||
-      !g_native_output_active.load(std::memory_order_relaxed)) {
+      !HasNativeGuestOutputRenderer() || !g_native_output_active.load(std::memory_order_relaxed)) {
     return false;
   }
   // Even width keeps every half-resolution derived target (bloom, SSAO,

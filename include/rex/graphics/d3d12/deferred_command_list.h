@@ -29,8 +29,7 @@ class D3D12CommandProcessor;
 
 class DeferredCommandList {
  public:
-  DeferredCommandList(D3D12CommandProcessor& command_processor,
-                      size_t initial_size_bytes = 1_MiB);
+  DeferredCommandList(D3D12CommandProcessor& command_processor, size_t initial_size_bytes = 1_MiB);
 
   void Reset();
   void Execute(ID3D12GraphicsCommandList* command_list, ID3D12GraphicsCommandList1* command_list_1);
@@ -91,10 +90,10 @@ class DeferredCommandList {
     }
   }
 
-  void D3DClearUnorderedAccessViewFloat(
-      D3D12_GPU_DESCRIPTOR_HANDLE view_gpu_handle_in_current_heap,
-      D3D12_CPU_DESCRIPTOR_HANDLE view_cpu_handle, ID3D12Resource* resource,
-      const FLOAT values[4], UINT num_rects, const D3D12_RECT* rects) {
+  void D3DClearUnorderedAccessViewFloat(D3D12_GPU_DESCRIPTOR_HANDLE view_gpu_handle_in_current_heap,
+                                        D3D12_CPU_DESCRIPTOR_HANDLE view_cpu_handle,
+                                        ID3D12Resource* resource, const FLOAT values[4],
+                                        UINT num_rects, const D3D12_RECT* rects) {
     auto args = reinterpret_cast<ClearUnorderedAccessViewHeader*>(
         WriteCommand(Command::kD3DClearUnorderedAccessViewFloat,
                      sizeof(ClearUnorderedAccessViewHeader) + num_rects * sizeof(D3D12_RECT)));

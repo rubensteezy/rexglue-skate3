@@ -204,14 +204,11 @@ const VulkanRenderTargetCache::TransferModeInfo
 
 VulkanRenderTargetCache::VulkanRenderTargetCache(const RegisterFile& register_file,
                                                  const memory::Memory& memory,
-                                                 TraceWriter& trace_writer,
                                                  uint32_t draw_resolution_scale_x,
                                                  uint32_t draw_resolution_scale_y,
                                                  VulkanCommandProcessor& command_processor)
-    : RenderTargetCache(register_file, memory, &trace_writer, draw_resolution_scale_x,
-                        draw_resolution_scale_y),
-      command_processor_(command_processor),
-      trace_writer_(trace_writer) {}
+    : RenderTargetCache(register_file, memory, draw_resolution_scale_x, draw_resolution_scale_y),
+      command_processor_(command_processor) {}
 
 VulkanRenderTargetCache::~VulkanRenderTargetCache() {
   Shutdown(true);
@@ -1009,7 +1006,6 @@ void VulkanRenderTargetCache::Shutdown(bool from_destructor) {
   const ui::vulkan::VulkanDevice* const vulkan_device = command_processor_.GetVulkanDevice();
   const ui::vulkan::VulkanDevice::Functions& dfn = vulkan_device->functions();
   const VkDevice device = vulkan_device->device();
-  ResetTraceDownload();
 
   // Destroy all render targets before the descriptor set pool is destroyed -
   // may happen if shutting down the VulkanRenderTargetCache by destroying it,
@@ -1087,7 +1083,6 @@ void VulkanRenderTargetCache::Shutdown(bool from_destructor) {
   ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyShaderModule, device,
                                          transfer_passthrough_vertex_shader_);
   transfer_vertex_buffer_pool_.reset();
-  edram_snapshot_restore_pool_.reset();
 
   for (size_t i = 0; i < rex::countof(host_depth_store_pipelines_); ++i) {
     ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyPipeline, device,
@@ -1162,213 +1157,14 @@ void VulkanRenderTargetCache::ClearCache() {
 }
 
 void VulkanRenderTargetCache::CompletedSubmissionUpdated() {
-  if (edram_snapshot_restore_pool_) {
-    edram_snapshot_restore_pool_->Reclaim(command_processor_.GetCompletedSubmission());
-  }
   if (transfer_vertex_buffer_pool_) {
     transfer_vertex_buffer_pool_->Reclaim(command_processor_.GetCompletedSubmission());
   }
 }
 
 void VulkanRenderTargetCache::EndSubmission() {
-  if (edram_snapshot_restore_pool_) {
-    edram_snapshot_restore_pool_->FlushWrites();
-  }
   if (transfer_vertex_buffer_pool_) {
     transfer_vertex_buffer_pool_->FlushWrites();
-  }
-}
-
-void VulkanRenderTargetCache::ResetTraceDownload() {
-  const ui::vulkan::VulkanDevice* const vulkan_device = command_processor_.GetVulkanDevice();
-  const ui::vulkan::VulkanDevice::Functions& dfn = vulkan_device->functions();
-  const VkDevice device = vulkan_device->device();
-  ui::vulkan::util::DestroyAndNullHandle(dfn.vkDestroyBuffer, device,
-                                         edram_snapshot_download_buffer_);
-  ui::vulkan::util::DestroyAndNullHandle(dfn.vkFreeMemory, device,
-                                         edram_snapshot_download_buffer_memory_);
-  edram_snapshot_download_buffer_memory_type_ = UINT32_MAX;
-  edram_snapshot_download_buffer_memory_size_ = 0;
-}
-
-bool VulkanRenderTargetCache::InitializeTraceSubmitDownloads() {
-  ResetTraceDownload();
-
-  if (IsDrawResolutionScaled()) {
-    // No 1:1 mapping.
-    return false;
-  }
-
-  if (!ui::vulkan::util::CreateDedicatedAllocationBuffer(
-          command_processor_.GetVulkanDevice(), xenos::kEdramSizeBytes,
-          VK_BUFFER_USAGE_TRANSFER_DST_BIT, ui::vulkan::util::MemoryPurpose::kReadback,
-          edram_snapshot_download_buffer_, edram_snapshot_download_buffer_memory_,
-          &edram_snapshot_download_buffer_memory_type_,
-          &edram_snapshot_download_buffer_memory_size_)) {
-    REXGPU_ERROR(
-        "VulkanRenderTargetCache: Failed to create an EDRAM snapshot download "
-        "buffer");
-    ResetTraceDownload();
-    return false;
-  }
-
-  if (GetPath() == Path::kHostRenderTargets) {
-    // Dump all host render targets to edram_buffer_.
-    if (!DumpRenderTargets(0, xenos::kEdramTileCount, 1, xenos::kEdramTileCount)) {
-      REXGPU_ERROR("VulkanRenderTargetCache: Failed to dump host render targets for trace");
-      ResetTraceDownload();
-      return false;
-    }
-  }
-
-  UseEdramBuffer(EdramBufferUsage::kTransferRead);
-  command_processor_.SubmitBarriers(true);
-  DeferredCommandBuffer& command_buffer = command_processor_.deferred_command_buffer();
-  VkBufferCopy edram_download_copy;
-  edram_download_copy.srcOffset = 0;
-  edram_download_copy.dstOffset = 0;
-  edram_download_copy.size = xenos::kEdramSizeBytes;
-  command_buffer.CmdVkCopyBuffer(edram_buffer_, edram_snapshot_download_buffer_, 1,
-                                 &edram_download_copy);
-  command_processor_.PushBufferMemoryBarrier(
-      edram_snapshot_download_buffer_, 0, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_TRANSFER_BIT,
-      VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-  return true;
-}
-
-void VulkanRenderTargetCache::InitializeTraceCompleteDownloads() {
-  if (edram_snapshot_download_buffer_memory_ == VK_NULL_HANDLE) {
-    return;
-  }
-
-  const ui::vulkan::VulkanDevice* const vulkan_device = command_processor_.GetVulkanDevice();
-  const ui::vulkan::VulkanDevice::Functions& dfn = vulkan_device->functions();
-  const VkDevice device = vulkan_device->device();
-  void* edram_snapshot_download_mapping = nullptr;
-  if (dfn.vkMapMemory(device, edram_snapshot_download_buffer_memory_, 0, VK_WHOLE_SIZE, 0,
-                      &edram_snapshot_download_mapping) == VK_SUCCESS) {
-    if (!(vulkan_device->memory_types().host_coherent &
-          (uint32_t(1) << edram_snapshot_download_buffer_memory_type_))) {
-      VkMappedMemoryRange edram_snapshot_download_memory_range = {};
-      edram_snapshot_download_memory_range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-      edram_snapshot_download_memory_range.memory = edram_snapshot_download_buffer_memory_;
-      edram_snapshot_download_memory_range.offset = 0;
-      edram_snapshot_download_memory_range.size =
-          std::min(rex::round_up(VkDeviceSize(xenos::kEdramSizeBytes),
-                                 vulkan_device->properties().nonCoherentAtomSize),
-                   edram_snapshot_download_buffer_memory_size_);
-      dfn.vkInvalidateMappedMemoryRanges(device, 1, &edram_snapshot_download_memory_range);
-    }
-
-    trace_writer_.WriteEdramSnapshot(edram_snapshot_download_mapping);
-    dfn.vkUnmapMemory(device, edram_snapshot_download_buffer_memory_);
-  } else {
-    REXGPU_ERROR(
-        "VulkanRenderTargetCache: Failed to map the EDRAM snapshot download "
-        "buffer");
-  }
-
-  ResetTraceDownload();
-}
-
-void VulkanRenderTargetCache::RestoreEdramSnapshot(const void* snapshot) {
-  if (IsDrawResolutionScaled()) {
-    // No 1:1 mapping.
-    return;
-  }
-
-  const ui::vulkan::VulkanDevice* const vulkan_device = command_processor_.GetVulkanDevice();
-  if (!edram_snapshot_restore_pool_) {
-    edram_snapshot_restore_pool_ = std::make_unique<ui::vulkan::VulkanUploadBufferPool>(
-        vulkan_device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, xenos::kEdramSizeBytes);
-  }
-  VkBuffer upload_buffer;
-  VkDeviceSize upload_buffer_offset;
-  uint8_t* upload_buffer_mapping = edram_snapshot_restore_pool_->Request(
-      command_processor_.GetCurrentSubmission(), xenos::kEdramSizeBytes, 1, upload_buffer,
-      upload_buffer_offset);
-  if (!upload_buffer_mapping) {
-    REXGPU_ERROR(
-        "VulkanRenderTargetCache: Failed to get a buffer for restoring an "
-        "EDRAM snapshot");
-    return;
-  }
-
-  DeferredCommandBuffer& command_buffer = command_processor_.deferred_command_buffer();
-
-  switch (GetPath()) {
-    case Path::kHostRenderTargets: {
-      // k_32_FLOAT because it's unambiguous.
-      VulkanRenderTarget* full_edram_render_target =
-          static_cast<VulkanRenderTarget*>(PrepareFullEdram1280xRenderTargetForSnapshotRestoration(
-              xenos::ColorRenderTargetFormat::k_32_FLOAT));
-      if (!full_edram_render_target) {
-        return;
-      }
-      assert_false(full_edram_render_target->key().is_depth);
-      assert_false(full_edram_render_target->key().Is64bpp());
-      uint32_t pitch_tiles = full_edram_render_target->key().pitch_tiles_at_32bpp;
-      uint32_t tile_rows = xenos::kEdramTileCount / pitch_tiles;
-      assert_true(pitch_tiles * tile_rows == xenos::kEdramTileCount);
-      uint32_t row_pitch_samples = pitch_tiles * xenos::kEdramTileWidthSamples;
-      VkDeviceSize row_pitch_bytes = VkDeviceSize(row_pitch_samples) * sizeof(uint32_t);
-      const uint8_t* snapshot_sample_row = reinterpret_cast<const uint8_t*>(snapshot);
-      for (uint32_t y_tile = 0; y_tile < tile_rows; ++y_tile) {
-        uint8_t* upload_buffer_tile_row_origin =
-            upload_buffer_mapping + row_pitch_bytes * xenos::kEdramTileHeightSamples * y_tile;
-        for (uint32_t x_tile = 0; x_tile < pitch_tiles; ++x_tile) {
-          uint8_t* upload_buffer_sample_row =
-              upload_buffer_tile_row_origin +
-              sizeof(uint32_t) * xenos::kEdramTileWidthSamples * x_tile;
-          for (uint32_t sample_row = 0; sample_row < xenos::kEdramTileHeightSamples; ++sample_row) {
-            std::memcpy(upload_buffer_sample_row, snapshot_sample_row,
-                        sizeof(uint32_t) * xenos::kEdramTileWidthSamples);
-            snapshot_sample_row += sizeof(uint32_t) * xenos::kEdramTileWidthSamples;
-            upload_buffer_sample_row += row_pitch_bytes;
-          }
-        }
-      }
-      command_processor_.PushImageMemoryBarrier(
-          full_edram_render_target->image(),
-          ui::vulkan::util::InitializeSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT),
-          full_edram_render_target->current_stage_mask(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-          full_edram_render_target->current_access_mask(), VK_ACCESS_TRANSFER_WRITE_BIT,
-          full_edram_render_target->current_layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-      full_edram_render_target->SetUsage(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                         VK_ACCESS_TRANSFER_WRITE_BIT,
-                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-      command_processor_.SubmitBarriers(true);
-      VkBufferImageCopy copy_region = {};
-      copy_region.bufferOffset = upload_buffer_offset;
-      copy_region.bufferRowLength = row_pitch_samples;
-      copy_region.bufferImageHeight = xenos::kEdramTileHeightSamples * tile_rows;
-      copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      copy_region.imageSubresource.mipLevel = 0;
-      copy_region.imageSubresource.baseArrayLayer = 0;
-      copy_region.imageSubresource.layerCount = 1;
-      copy_region.imageOffset.x = 0;
-      copy_region.imageOffset.y = 0;
-      copy_region.imageOffset.z = 0;
-      copy_region.imageExtent.width = row_pitch_samples;
-      copy_region.imageExtent.height = xenos::kEdramTileHeightSamples * tile_rows;
-      copy_region.imageExtent.depth = 1;
-      command_buffer.CmdVkCopyBufferToImage(upload_buffer, full_edram_render_target->image(),
-                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-    } break;
-
-    case Path::kPixelShaderInterlock: {
-      std::memcpy(upload_buffer_mapping, snapshot, xenos::kEdramSizeBytes);
-      UseEdramBuffer(EdramBufferUsage::kTransferWrite);
-      command_processor_.SubmitBarriers(true);
-      VkBufferCopy copy_region = {};
-      copy_region.srcOffset = upload_buffer_offset;
-      copy_region.dstOffset = 0;
-      copy_region.size = xenos::kEdramSizeBytes;
-      command_buffer.CmdVkCopyBuffer(upload_buffer, edram_buffer_, 1, &copy_region);
-    } break;
-
-    default:
-      assert_unhandled_case(GetPath());
   }
 }
 
@@ -1403,8 +1199,7 @@ void VulkanRenderTargetCache::DebugLogLastUpdateRenderTargetsForTeamProfileBackg
 bool VulkanRenderTargetCache::Resolve(const memory::Memory& memory,
                                       VulkanSharedMemory& shared_memory,
                                       VulkanTextureCache& texture_cache,
-                                      uint32_t& written_address_out,
-                                      uint32_t& written_length_out,
+                                      uint32_t& written_address_out, uint32_t& written_length_out,
                                       bool debug_log_team_profile_background_trace) {
   written_address_out = 0;
   written_length_out = 0;
@@ -1412,7 +1207,7 @@ bool VulkanRenderTargetCache::Resolve(const memory::Memory& memory,
   bool draw_resolution_scaled = IsDrawResolutionScaled();
 
   draw_util::ResolveInfo resolve_info;
-  if (!draw_util::GetResolveInfo(register_file(), memory, trace_writer_, draw_resolution_scale_x(),
+  if (!draw_util::GetResolveInfo(register_file(), memory, draw_resolution_scale_x(),
                                  draw_resolution_scale_y(), IsFixedRG16TruncatedToMinus1To1(),
                                  IsFixedRGBA16TruncatedToMinus1To1(), resolve_info)) {
     return false;
@@ -1443,9 +1238,9 @@ bool VulkanRenderTargetCache::Resolve(const memory::Memory& memory,
       bool direct_resolved = false;
       if (GetPath() == Path::kHostRenderTargets) {
         if (REXCVAR_GET(direct_host_resolve)) {
-          direct_resolved = TryResolveCopyDirectly(resolve_info, copy_shader,
-                                                   draw_resolution_scaled, shared_memory,
-                                                   copy_shader_constants);
+          direct_resolved =
+              TryResolveCopyDirectly(resolve_info, copy_shader, draw_resolution_scaled,
+                                     shared_memory, copy_shader_constants);
           if (direct_resolved) {
             ++direct_resolve_success_count_;
           } else {
@@ -1476,174 +1271,177 @@ bool VulkanRenderTargetCache::Resolve(const memory::Memory& memory,
         written_length_out = resolve_info.copy_dest_extent_length;
         copied = true;
       } else {
-      // Note: this block is kept at its original indentation to minimize the
-      // diff against the EDRAM-buffer copy path.
-      uint32_t copy_dest_range_unscaled = resolve_info.copy_dest_extent_start -
-                                          resolve_info.copy_dest_base +
-                                          resolve_info.copy_dest_extent_length;
-      uint64_t copy_dest_base = resolve_info.copy_dest_base;
-      uint64_t copy_dest_range_length = copy_dest_range_unscaled;
-      uint64_t copy_dest_use_start = resolve_info.copy_dest_extent_start;
-      uint64_t copy_dest_use_length = resolve_info.copy_dest_extent_length;
-      if (draw_resolution_scaled) {
-        if (!texture_cache.GetScaledResolveRange(
-                resolve_info.copy_dest_base, copy_dest_range_unscaled,
-                copy_shader_info.dest_bpe_log2, copy_dest_base, copy_dest_range_length) ||
-            !texture_cache.GetScaledResolveRange(
-                resolve_info.copy_dest_extent_start, resolve_info.copy_dest_extent_length,
-                copy_shader_info.dest_bpe_log2, copy_dest_use_start, copy_dest_use_length)) {
+        // Note: this block is kept at its original indentation to minimize the
+        // diff against the EDRAM-buffer copy path.
+        uint32_t copy_dest_range_unscaled = resolve_info.copy_dest_extent_start -
+                                            resolve_info.copy_dest_base +
+                                            resolve_info.copy_dest_extent_length;
+        uint64_t copy_dest_base = resolve_info.copy_dest_base;
+        uint64_t copy_dest_range_length = copy_dest_range_unscaled;
+        uint64_t copy_dest_use_start = resolve_info.copy_dest_extent_start;
+        uint64_t copy_dest_use_length = resolve_info.copy_dest_extent_length;
+        if (draw_resolution_scaled) {
+          if (!texture_cache.GetScaledResolveRange(
+                  resolve_info.copy_dest_base, copy_dest_range_unscaled,
+                  copy_shader_info.dest_bpe_log2, copy_dest_base, copy_dest_range_length) ||
+              !texture_cache.GetScaledResolveRange(
+                  resolve_info.copy_dest_extent_start, resolve_info.copy_dest_extent_length,
+                  copy_shader_info.dest_bpe_log2, copy_dest_use_start, copy_dest_use_length)) {
+            REXGPU_ERROR(
+                "VulkanRenderTargetCache: Failed to map scaled resolve "
+                "destination range (base={:08X}, length={:08X})",
+                resolve_info.copy_dest_base, copy_dest_range_unscaled);
+            return false;
+          }
+        }
+
+        if (debug_log_team_profile_background_trace) {
+          REXGPU_WARN(
+              "Team profile BG Vulkan resolve trace: scaled={}, copy_shader={}, dest_base={:08X}, "
+              "dest_extent={:08X}+{:X}, dest_range_unscaled={:X}, buffer_offset={:X}, "
+              "buffer_range={:X}, use_range={:X}+{:X}, groups={}x{}, dest_bpe_log2={}",
+              draw_resolution_scaled, uint32_t(copy_shader), resolve_info.copy_dest_base,
+              resolve_info.copy_dest_extent_start, resolve_info.copy_dest_extent_length,
+              copy_dest_range_unscaled, copy_dest_base, copy_dest_range_length, copy_dest_use_start,
+              copy_dest_use_length, copy_group_count_x, copy_group_count_y,
+              copy_shader_info.dest_bpe_log2);
+          texture_cache.DebugRecordTeamProfileBackgroundResolveRange(
+              resolve_info.copy_dest_base, copy_dest_range_unscaled, draw_resolution_scaled,
+              copy_dest_base, copy_dest_range_length);
+        }
+
+        // Make sure there is memory to write to.
+        bool copy_dest_committed;
+        if (draw_resolution_scaled) {
+          copy_dest_committed = texture_cache.CommitScaledResolveRange(
+              resolve_info.copy_dest_base, copy_dest_range_unscaled,
+              copy_shader_info.dest_bpe_log2);
+        } else {
+          copy_dest_committed = shared_memory.RequestRange(resolve_info.copy_dest_extent_start,
+                                                           resolve_info.copy_dest_extent_length);
+        }
+        if (!copy_dest_committed) {
           REXGPU_ERROR(
-              "VulkanRenderTargetCache: Failed to map scaled resolve "
-              "destination range (base={:08X}, length={:08X})",
-              resolve_info.copy_dest_base, copy_dest_range_unscaled);
-          return false;
-        }
-      }
+              "VulkanRenderTargetCache: Failed to obtain the resolve destination "
+              "memory region");
+        } else {
+          // TODO(Triang3l): Switching between descriptors if exceeding
+          // maxStorageBufferRange.
+          // TODO(Triang3l): Use a single 512 MB shared memory binding if
+          // possible.
+          VkDescriptorSet descriptor_set_dest =
+              command_processor_.AllocateSingleTransientDescriptor(
+                  VulkanCommandProcessor::SingleTransientDescriptorLayout ::kStorageBufferCompute);
+          if (descriptor_set_dest != VK_NULL_HANDLE) {
+            // Write the destination descriptor.
+            VkDescriptorBufferInfo write_descriptor_set_dest_buffer_info;
+            write_descriptor_set_dest_buffer_info.buffer =
+                draw_resolution_scaled ? texture_cache.scaled_resolve_buffer()
+                                       : shared_memory.buffer();
+            write_descriptor_set_dest_buffer_info.offset = copy_dest_base;
+            write_descriptor_set_dest_buffer_info.range = copy_dest_range_length;
+            VkWriteDescriptorSet write_descriptor_set_dest;
+            write_descriptor_set_dest.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_descriptor_set_dest.pNext = nullptr;
+            write_descriptor_set_dest.dstSet = descriptor_set_dest;
+            write_descriptor_set_dest.dstBinding = 0;
+            write_descriptor_set_dest.dstArrayElement = 0;
+            write_descriptor_set_dest.descriptorCount = 1;
+            write_descriptor_set_dest.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            write_descriptor_set_dest.pImageInfo = nullptr;
+            write_descriptor_set_dest.pBufferInfo = &write_descriptor_set_dest_buffer_info;
+            write_descriptor_set_dest.pTexelBufferView = nullptr;
+            dfn.vkUpdateDescriptorSets(device, 1, &write_descriptor_set_dest, 0, nullptr);
 
-      if (debug_log_team_profile_background_trace) {
-        REXGPU_WARN(
-            "Team profile BG Vulkan resolve trace: scaled={}, copy_shader={}, dest_base={:08X}, "
-            "dest_extent={:08X}+{:X}, dest_range_unscaled={:X}, buffer_offset={:X}, "
-            "buffer_range={:X}, use_range={:X}+{:X}, groups={}x{}, dest_bpe_log2={}",
-            draw_resolution_scaled, uint32_t(copy_shader), resolve_info.copy_dest_base,
-            resolve_info.copy_dest_extent_start, resolve_info.copy_dest_extent_length,
-            copy_dest_range_unscaled, copy_dest_base, copy_dest_range_length,
-            copy_dest_use_start, copy_dest_use_length, copy_group_count_x, copy_group_count_y,
-            copy_shader_info.dest_bpe_log2);
-        texture_cache.DebugRecordTeamProfileBackgroundResolveRange(
-            resolve_info.copy_dest_base, copy_dest_range_unscaled, draw_resolution_scaled,
-            copy_dest_base, copy_dest_range_length);
-      }
-
-      // Make sure there is memory to write to.
-      bool copy_dest_committed;
-      if (draw_resolution_scaled) {
-        copy_dest_committed = texture_cache.CommitScaledResolveRange(
-            resolve_info.copy_dest_base, copy_dest_range_unscaled, copy_shader_info.dest_bpe_log2);
-      } else {
-        copy_dest_committed = shared_memory.RequestRange(resolve_info.copy_dest_extent_start,
-                                                         resolve_info.copy_dest_extent_length);
-      }
-      if (!copy_dest_committed) {
-        REXGPU_ERROR(
-            "VulkanRenderTargetCache: Failed to obtain the resolve destination "
-            "memory region");
-      } else {
-        // TODO(Triang3l): Switching between descriptors if exceeding
-        // maxStorageBufferRange.
-        // TODO(Triang3l): Use a single 512 MB shared memory binding if
-        // possible.
-        VkDescriptorSet descriptor_set_dest = command_processor_.AllocateSingleTransientDescriptor(
-            VulkanCommandProcessor::SingleTransientDescriptorLayout ::kStorageBufferCompute);
-        if (descriptor_set_dest != VK_NULL_HANDLE) {
-          // Write the destination descriptor.
-          VkDescriptorBufferInfo write_descriptor_set_dest_buffer_info;
-          write_descriptor_set_dest_buffer_info.buffer = draw_resolution_scaled
-                                                             ? texture_cache.scaled_resolve_buffer()
-                                                             : shared_memory.buffer();
-          write_descriptor_set_dest_buffer_info.offset = copy_dest_base;
-          write_descriptor_set_dest_buffer_info.range = copy_dest_range_length;
-          VkWriteDescriptorSet write_descriptor_set_dest;
-          write_descriptor_set_dest.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-          write_descriptor_set_dest.pNext = nullptr;
-          write_descriptor_set_dest.dstSet = descriptor_set_dest;
-          write_descriptor_set_dest.dstBinding = 0;
-          write_descriptor_set_dest.dstArrayElement = 0;
-          write_descriptor_set_dest.descriptorCount = 1;
-          write_descriptor_set_dest.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-          write_descriptor_set_dest.pImageInfo = nullptr;
-          write_descriptor_set_dest.pBufferInfo = &write_descriptor_set_dest_buffer_info;
-          write_descriptor_set_dest.pTexelBufferView = nullptr;
-          dfn.vkUpdateDescriptorSets(device, 1, &write_descriptor_set_dest, 0, nullptr);
-
-          // Submit the resolve.
-          if (draw_resolution_scaled) {
-            texture_cache.UseScaledResolveBufferForWrite(copy_dest_use_start, copy_dest_use_length);
-          } else {
-            shared_memory.Use(VulkanSharedMemory::Usage::kComputeWrite,
-                              std::pair<uint32_t, uint32_t>(uint32_t(copy_dest_use_start),
-                                                            uint32_t(copy_dest_use_length)));
-          }
-          UseEdramBuffer(EdramBufferUsage::kComputeRead);
-          command_processor_.BindExternalComputePipeline(
-              resolve_copy_pipelines_[size_t(copy_shader)]);
-          rex::perf::DrawBucket resolve_timing_bucket =
-              rex::perf::DrawBucket::kCopyResolveShader;
-          if (copy_shader == draw_util::ResolveCopyShaderIndex::kFast32bpp1x2xMSAA) {
-            resolve_timing_bucket = rex::perf::DrawBucket::kCopyResolveFast32;
-          } else if (copy_shader == draw_util::ResolveCopyShaderIndex::kFull32bpp) {
-            resolve_timing_bucket = rex::perf::DrawBucket::kCopyResolveFull32;
-          }
-          command_processor_.BeginGpuTimestampedRegion(resolve_timing_bucket);
-          VkDescriptorSet descriptor_sets[kResolveCopyDescriptorSetCount] = {};
-          descriptor_sets[kResolveCopyDescriptorSetEdram] = edram_storage_buffer_descriptor_set_;
-          descriptor_sets[kResolveCopyDescriptorSetDest] = descriptor_set_dest;
-          command_buffer.CmdVkBindDescriptorSets(
-              VK_PIPELINE_BIND_POINT_COMPUTE, resolve_copy_pipeline_layout_, 0,
-              uint32_t(rex::countof(descriptor_sets)), descriptor_sets, 0, nullptr);
-          if (draw_resolution_scaled) {
-            command_buffer.CmdVkPushConstants(
-                resolve_copy_pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                sizeof(copy_shader_constants.dest_relative), &copy_shader_constants.dest_relative);
-          } else {
-            // TODO(Triang3l): Proper dest_base in case of one 512 MB shared
-            // memory binding, or multiple shared memory bindings in case of
-            // splitting due to maxStorageBufferRange overflow.
-            copy_shader_constants.dest_base -=
-                uint32_t(write_descriptor_set_dest_buffer_info.offset);
-            command_buffer.CmdVkPushConstants(
-                resolve_copy_pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                sizeof(copy_shader_constants), &copy_shader_constants);
-          }
-          command_processor_.SubmitBarriers(true);
-          PERF_counter_inc(kRtResolveCopyDispatches);
-          PERF_counter_add(kRtResolveCopyGroups,
-                           uint64_t(copy_group_count_x) * copy_group_count_y);
+            // Submit the resolve.
+            if (draw_resolution_scaled) {
+              texture_cache.UseScaledResolveBufferForWrite(copy_dest_use_start,
+                                                           copy_dest_use_length);
+            } else {
+              shared_memory.Use(VulkanSharedMemory::Usage::kComputeWrite,
+                                std::pair<uint32_t, uint32_t>(uint32_t(copy_dest_use_start),
+                                                              uint32_t(copy_dest_use_length)));
+            }
+            UseEdramBuffer(EdramBufferUsage::kComputeRead);
+            command_processor_.BindExternalComputePipeline(
+                resolve_copy_pipelines_[size_t(copy_shader)]);
+            rex::perf::DrawBucket resolve_timing_bucket = rex::perf::DrawBucket::kCopyResolveShader;
+            if (copy_shader == draw_util::ResolveCopyShaderIndex::kFast32bpp1x2xMSAA) {
+              resolve_timing_bucket = rex::perf::DrawBucket::kCopyResolveFast32;
+            } else if (copy_shader == draw_util::ResolveCopyShaderIndex::kFull32bpp) {
+              resolve_timing_bucket = rex::perf::DrawBucket::kCopyResolveFull32;
+            }
+            command_processor_.BeginGpuTimestampedRegion(resolve_timing_bucket);
+            VkDescriptorSet descriptor_sets[kResolveCopyDescriptorSetCount] = {};
+            descriptor_sets[kResolveCopyDescriptorSetEdram] = edram_storage_buffer_descriptor_set_;
+            descriptor_sets[kResolveCopyDescriptorSetDest] = descriptor_set_dest;
+            command_buffer.CmdVkBindDescriptorSets(
+                VK_PIPELINE_BIND_POINT_COMPUTE, resolve_copy_pipeline_layout_, 0,
+                uint32_t(rex::countof(descriptor_sets)), descriptor_sets, 0, nullptr);
+            if (draw_resolution_scaled) {
+              command_buffer.CmdVkPushConstants(resolve_copy_pipeline_layout_,
+                                                VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                                sizeof(copy_shader_constants.dest_relative),
+                                                &copy_shader_constants.dest_relative);
+            } else {
+              // TODO(Triang3l): Proper dest_base in case of one 512 MB shared
+              // memory binding, or multiple shared memory bindings in case of
+              // splitting due to maxStorageBufferRange overflow.
+              copy_shader_constants.dest_base -=
+                  uint32_t(write_descriptor_set_dest_buffer_info.offset);
+              command_buffer.CmdVkPushConstants(
+                  resolve_copy_pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                  sizeof(copy_shader_constants), &copy_shader_constants);
+            }
+            command_processor_.SubmitBarriers(true);
+            PERF_counter_inc(kRtResolveCopyDispatches);
+            PERF_counter_add(kRtResolveCopyGroups,
+                             uint64_t(copy_group_count_x) * copy_group_count_y);
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
-          static constexpr rex::perf::CounterId kResolveCopyDispatchCounters[] = {
-              rex::perf::CounterId::kRtResolveCopyFast32bpp1x2xMsaaDispatches,
-              rex::perf::CounterId::kRtResolveCopyFast32bpp4xMsaaDispatches,
-              rex::perf::CounterId::kRtResolveCopyFast64bpp1x2xMsaaDispatches,
-              rex::perf::CounterId::kRtResolveCopyFast64bpp4xMsaaDispatches,
-              rex::perf::CounterId::kRtResolveCopyFull8bppDispatches,
-              rex::perf::CounterId::kRtResolveCopyFull16bppDispatches,
-              rex::perf::CounterId::kRtResolveCopyFull32bppDispatches,
-              rex::perf::CounterId::kRtResolveCopyFull64bppDispatches,
-              rex::perf::CounterId::kRtResolveCopyFull128bppDispatches,
-          };
-          static constexpr rex::perf::CounterId kResolveCopyGroupCounters[] = {
-              rex::perf::CounterId::kRtResolveCopyFast32bpp1x2xMsaaGroups,
-              rex::perf::CounterId::kRtResolveCopyFast32bpp4xMsaaGroups,
-              rex::perf::CounterId::kRtResolveCopyFast64bpp1x2xMsaaGroups,
-              rex::perf::CounterId::kRtResolveCopyFast64bpp4xMsaaGroups,
-              rex::perf::CounterId::kRtResolveCopyFull8bppGroups,
-              rex::perf::CounterId::kRtResolveCopyFull16bppGroups,
-              rex::perf::CounterId::kRtResolveCopyFull32bppGroups,
-              rex::perf::CounterId::kRtResolveCopyFull64bppGroups,
-              rex::perf::CounterId::kRtResolveCopyFull128bppGroups,
-          };
-          static_assert(std::size(kResolveCopyDispatchCounters) ==
-                        size_t(draw_util::ResolveCopyShaderIndex::kCount));
-          static_assert(std::size(kResolveCopyGroupCounters) ==
-                        size_t(draw_util::ResolveCopyShaderIndex::kCount));
-          size_t copy_shader_index = size_t(copy_shader);
-          rex::perf::IncrementCounter(kResolveCopyDispatchCounters[copy_shader_index]);
-          rex::perf::IncrementCounter(kResolveCopyGroupCounters[copy_shader_index],
-                                      uint64_t(copy_group_count_x) * copy_group_count_y);
+            static constexpr rex::perf::CounterId kResolveCopyDispatchCounters[] = {
+                rex::perf::CounterId::kRtResolveCopyFast32bpp1x2xMsaaDispatches,
+                rex::perf::CounterId::kRtResolveCopyFast32bpp4xMsaaDispatches,
+                rex::perf::CounterId::kRtResolveCopyFast64bpp1x2xMsaaDispatches,
+                rex::perf::CounterId::kRtResolveCopyFast64bpp4xMsaaDispatches,
+                rex::perf::CounterId::kRtResolveCopyFull8bppDispatches,
+                rex::perf::CounterId::kRtResolveCopyFull16bppDispatches,
+                rex::perf::CounterId::kRtResolveCopyFull32bppDispatches,
+                rex::perf::CounterId::kRtResolveCopyFull64bppDispatches,
+                rex::perf::CounterId::kRtResolveCopyFull128bppDispatches,
+            };
+            static constexpr rex::perf::CounterId kResolveCopyGroupCounters[] = {
+                rex::perf::CounterId::kRtResolveCopyFast32bpp1x2xMsaaGroups,
+                rex::perf::CounterId::kRtResolveCopyFast32bpp4xMsaaGroups,
+                rex::perf::CounterId::kRtResolveCopyFast64bpp1x2xMsaaGroups,
+                rex::perf::CounterId::kRtResolveCopyFast64bpp4xMsaaGroups,
+                rex::perf::CounterId::kRtResolveCopyFull8bppGroups,
+                rex::perf::CounterId::kRtResolveCopyFull16bppGroups,
+                rex::perf::CounterId::kRtResolveCopyFull32bppGroups,
+                rex::perf::CounterId::kRtResolveCopyFull64bppGroups,
+                rex::perf::CounterId::kRtResolveCopyFull128bppGroups,
+            };
+            static_assert(std::size(kResolveCopyDispatchCounters) ==
+                          size_t(draw_util::ResolveCopyShaderIndex::kCount));
+            static_assert(std::size(kResolveCopyGroupCounters) ==
+                          size_t(draw_util::ResolveCopyShaderIndex::kCount));
+            size_t copy_shader_index = size_t(copy_shader);
+            rex::perf::IncrementCounter(kResolveCopyDispatchCounters[copy_shader_index]);
+            rex::perf::IncrementCounter(kResolveCopyGroupCounters[copy_shader_index],
+                                        uint64_t(copy_group_count_x) * copy_group_count_y);
 #endif
-          if (draw_resolution_scaled) {
-            PERF_counter_add(kRtResolveScaledBytes, copy_dest_use_length);
-          }
-          command_buffer.CmdVkDispatch(copy_group_count_x, copy_group_count_y, 1);
+            if (draw_resolution_scaled) {
+              PERF_counter_add(kRtResolveScaledBytes, copy_dest_use_length);
+            }
+            command_buffer.CmdVkDispatch(copy_group_count_x, copy_group_count_y, 1);
 
-          // Invalidate textures and mark the range as scaled if needed.
-          texture_cache.MarkRangeAsResolved(resolve_info.copy_dest_extent_start,
-                                            resolve_info.copy_dest_extent_length);
-          written_address_out = resolve_info.copy_dest_extent_start;
-          written_length_out = resolve_info.copy_dest_extent_length;
-          copied = true;
+            // Invalidate textures and mark the range as scaled if needed.
+            texture_cache.MarkRangeAsResolved(resolve_info.copy_dest_extent_start,
+                                              resolve_info.copy_dest_extent_length);
+            written_address_out = resolve_info.copy_dest_extent_start;
+            written_length_out = resolve_info.copy_dest_extent_length;
+            copied = true;
+          }
         }
-      }
       }  // !direct_resolved
     }
   } else {
@@ -4999,8 +4797,7 @@ void VulkanRenderTargetCache::PerformTransfersAndResolveClears(
           FlushDeferredResolveClears(*static_cast<VulkanRenderTarget*>(transfer.source));
         }
         if (transfer.host_depth_source) {
-          FlushDeferredResolveClears(
-              *static_cast<VulkanRenderTarget*>(transfer.host_depth_source));
+          FlushDeferredResolveClears(*static_cast<VulkanRenderTarget*>(transfer.host_depth_source));
         }
       }
     }
@@ -6541,9 +6338,9 @@ VkPipeline VulkanRenderTargetCache::GetDirectResolveFast32Pipeline(
         is_depth, msaa_index, compile_error);
     return VK_NULL_HANDLE;
   }
-  pipeline = ui::vulkan::util::CreateComputePipeline(command_processor_.GetVulkanDevice(),
-                                                     pipeline_layout, spirv.data(),
-                                                     sizeof(uint32_t) * spirv.size());
+  pipeline =
+      ui::vulkan::util::CreateComputePipeline(command_processor_.GetVulkanDevice(), pipeline_layout,
+                                              spirv.data(), sizeof(uint32_t) * spirv.size());
   if (pipeline == VK_NULL_HANDLE) {
     REXGPU_WARN(
         "VulkanRenderTargetCache: Failed to create the direct fast 32bpp resolve pipeline "
@@ -6677,8 +6474,8 @@ bool VulkanRenderTargetCache::TryResolveCopyDirectly(
     }
   }
 
-  VkPipelineLayout pipeline_layout = is_depth_copy ? direct_resolve_pipeline_layout_depth_
-                                                   : direct_resolve_pipeline_layout_color_;
+  VkPipelineLayout pipeline_layout =
+      is_depth_copy ? direct_resolve_pipeline_layout_depth_ : direct_resolve_pipeline_layout_color_;
   if (pipeline_layout == VK_NULL_HANDLE) {
     log_fallback("pipeline-unavailable");
     return false;
@@ -6790,8 +6587,7 @@ bool VulkanRenderTargetCache::TryResolveCopyDirectly(
       push_constants.source_format_case = format_is_2_10_10_10 ? 1 : 0;
     }
     ResolveCopyDumpRectangle::Dispatch dispatches[ResolveCopyDumpRectangle::kMaxDispatches];
-    uint32_t dispatch_count =
-        rectangle.GetDispatches(dump_pitch, dump_row_length_used, dispatches);
+    uint32_t dispatch_count = rectangle.GetDispatches(dump_pitch, dump_row_length_used, dispatches);
     for (uint32_t i = 0; i < dispatch_count; ++i) {
       const ResolveCopyDumpRectangle::Dispatch& dispatch = dispatches[i];
       push_constants.dispatch_first_tile = dump_base + dispatch.offset;
@@ -6800,8 +6596,7 @@ bool VulkanRenderTargetCache::TryResolveCopyDirectly(
       // 8x8 threads per group; a 32bpp tile is 80x16 single-sampled pixels, so
       // a tile is covered by exactly 10x2 groups.
       command_buffer.CmdVkDispatch(dispatch.width_tiles * (xenos::kEdramTileWidthSamples / 8),
-                                   dispatch.height_tiles * (xenos::kEdramTileHeightSamples / 8),
-                                   1);
+                                   dispatch.height_tiles * (xenos::kEdramTileHeightSamples / 8), 1);
     }
   }
 
@@ -6927,8 +6722,8 @@ void VulkanRenderTargetCache::DeferResolveClear(VulkanRenderTarget& render_targe
   deferred_clear.clear_value = clear_value;
   // Conservative full-tile-row coverage of the rectangle for read
   // intersection checks.
-  uint32_t tile_row_height_pixels = xenos::kEdramTileHeightSamples >>
-                                    uint32_t(rt_key.msaa_samples >= xenos::MsaaSamples::k2X);
+  uint32_t tile_row_height_pixels =
+      xenos::kEdramTileHeightSamples >> uint32_t(rt_key.msaa_samples >= xenos::MsaaSamples::k2X);
   uint32_t row_first = clear_rectangle.y_pixels / tile_row_height_pixels;
   uint32_t row_last =
       (clear_rectangle.y_pixels + std::max(clear_rectangle.height_pixels, uint32_t(1)) - 1) /
@@ -6959,8 +6754,7 @@ void VulkanRenderTargetCache::DeferResolveClear(VulkanRenderTarget& render_targe
 }
 
 void VulkanRenderTargetCache::FlushDeferredResolveClears(VulkanRenderTarget& render_target) {
-  std::vector<VulkanRenderTarget::DeferredClear>& deferred_clears =
-      render_target.deferred_clears();
+  std::vector<VulkanRenderTarget::DeferredClear>& deferred_clears = render_target.deferred_clears();
   if (deferred_clears.empty()) {
     return;
   }
@@ -7062,8 +6856,7 @@ void VulkanRenderTargetCache::FlushDeferredResolveClearsBeforeEdramRead(uint32_t
     uint64_t b_end = uint64_t(b_start) + std::min(b_length, xenos::kEdramTileCount);
     for (int32_t period = -1; period <= 1; ++period) {
       int64_t shift = int64_t(period) * xenos::kEdramTileCount;
-      if (int64_t(a_start) < int64_t(b_end) + shift &&
-          int64_t(b_start) + shift < int64_t(a_end)) {
+      if (int64_t(a_start) < int64_t(b_end) + shift && int64_t(b_start) + shift < int64_t(a_end)) {
         return true;
       }
     }

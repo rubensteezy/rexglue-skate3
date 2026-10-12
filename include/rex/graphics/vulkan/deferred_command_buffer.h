@@ -344,8 +344,8 @@ class DeferredCommandBuffer {
                                            VkPipelineLayout layout, uint32_t set,
                                            uint32_t buffer_count,
                                            const VkDescriptorBufferInfo* buffer_infos) {
-    size_t arguments_size = rex::align(sizeof(ArgsVkPushUniformBufferDescriptorSet),
-                                       alignof(VkDescriptorBufferInfo));
+    size_t arguments_size =
+        rex::align(sizeof(ArgsVkPushUniformBufferDescriptorSet), alignof(VkDescriptorBufferInfo));
     size_t buffer_infos_offset = arguments_size;
     arguments_size += sizeof(VkDescriptorBufferInfo) * buffer_count;
     uint8_t* args_ptr = reinterpret_cast<uint8_t*>(

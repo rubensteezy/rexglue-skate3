@@ -28,10 +28,6 @@
 #include <ffx_api/ffx_upscale.h>
 #endif
 
-#if REX_PLATFORM_WIN32
-#include <rex/ui/window_win.h>
-#endif
-
 REXCVAR_DEFINE_BOOL(host_present_from_non_ui_thread, true, "UI/Presenter",
                     "Allow presentation from non-UI thread");
 
@@ -605,8 +601,7 @@ bool Presenter::RefreshGuestOutput(
       static uint32_t s_cad_n = 0;
       const auto cad_now = std::chrono::steady_clock::now();
       if (s_cad_prev.time_since_epoch().count() != 0) {
-        const double ms =
-            std::chrono::duration<double, std::milli>(cad_now - s_cad_prev).count();
+        const double ms = std::chrono::duration<double, std::milli>(cad_now - s_cad_prev).count();
         s_cad_sum += ms;
         s_cad_sumsq += ms * ms;
         s_cad_max = std::max(s_cad_max, ms);
@@ -647,10 +642,8 @@ bool Presenter::RefreshGuestOutput(
   }
 
   if (REXCVAR_GET(presenter_strict_guest_output_backpressure)) {
-    const int32_t timeout_ms =
-        REXCVAR_GET(presenter_strict_guest_output_backpressure_timeout_ms);
-    std::unique_lock<std::mutex> producer_wait_lock(
-        guest_output_mailbox_producer_wait_mutex_);
+    const int32_t timeout_ms = REXCVAR_GET(presenter_strict_guest_output_backpressure_timeout_ms);
+    std::unique_lock<std::mutex> producer_wait_lock(guest_output_mailbox_producer_wait_mutex_);
     auto ready_consumed = [&]() {
       uint32_t acquired_and_ready =
           guest_output_mailbox_acquired_and_ready_.load(std::memory_order_acquire);
@@ -790,9 +783,8 @@ Presenter::GuestFrameStats Presenter::GetGuestFrameStats() const {
   std::chrono::steady_clock::time_point newest_in_window;
   for (size_t i = 0; i < guest_frame_timestamp_count_; ++i) {
     // Walk from the newest sample backwards.
-    size_t index =
-        (guest_frame_timestamp_next_ + kGuestFrameTimestampCount - 1 - i) %
-        kGuestFrameTimestampCount;
+    size_t index = (guest_frame_timestamp_next_ + kGuestFrameTimestampCount - 1 - i) %
+                   kGuestFrameTimestampCount;
     const std::chrono::steady_clock::time_point timestamp = guest_frame_timestamps_[index];
     if (timestamp < window_start) {
       break;
@@ -810,14 +802,12 @@ Presenter::GuestFrameStats Presenter::GetGuestFrameStats() const {
       std::chrono::duration_cast<std::chrono::duration<double>>(now - oldest_in_window).count();
   double span_between_frames_seconds = 0.0;
   if (frames_in_window >= 2) {
-    span_between_frames_seconds =
-        std::chrono::duration_cast<std::chrono::duration<double>>(newest_in_window -
-                                                                  oldest_in_window)
-            .count();
+    span_between_frames_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
+                                      newest_in_window - oldest_in_window)
+                                      .count();
   }
   if (span_between_frames_seconds > 0.0 && span_to_now_seconds > 0.0) {
-    const double mean_interval_seconds =
-        span_between_frames_seconds / double(frames_in_window - 1);
+    const double mean_interval_seconds = span_between_frames_seconds / double(frames_in_window - 1);
     stats.frame_time_ms = mean_interval_seconds * 1000.0;
     // Rate = frame intervals per second, not frames per second: N frames span
     // only N - 1 intervals, so dividing the frame count by the span reads up
@@ -826,8 +816,8 @@ Presenter::GuestFrameStats Presenter::GetGuestFrameStats() const {
     // included so a steady source reads exactly its rate regardless of
     // phase, but clamped to one interval so the estimate still decays toward
     // zero when the guest stops producing frames.
-    const double partial_interval = std::min(
-        (span_to_now_seconds - span_between_frames_seconds) / mean_interval_seconds, 1.0);
+    const double partial_interval =
+        std::min((span_to_now_seconds - span_between_frames_seconds) / mean_interval_seconds, 1.0);
     stats.fps = (double(frames_in_window - 1) + partial_interval) / span_to_now_seconds;
   } else if (span_to_now_seconds > 0.0) {
     // A single frame in the window (or coincident timestamps): no interval to
@@ -1455,11 +1445,11 @@ Presenter::GuestOutputPaintFlow Presenter::GetGuestOutputPaintFlow(
   // (GetLastGuestOutputPaintRect). Values fit 16 bits comfortably (8K wide is
   // 7680); reached only on the successful path, so degenerate flows keep the
   // previous rectangle.
-  last_guest_output_paint_rect_.store(
-      uint64_t(uint16_t(int16_t(flow.output_x))) |
-          (uint64_t(uint16_t(int16_t(flow.output_y))) << 16) |
-          (uint64_t(uint16_t(output_width)) << 32) | (uint64_t(uint16_t(output_height)) << 48),
-      std::memory_order_relaxed);
+  last_guest_output_paint_rect_.store(uint64_t(uint16_t(int16_t(flow.output_x))) |
+                                          (uint64_t(uint16_t(int16_t(flow.output_y))) << 16) |
+                                          (uint64_t(uint16_t(output_width)) << 32) |
+                                          (uint64_t(uint16_t(output_height)) << 48),
+                                      std::memory_order_relaxed);
 
   return flow;
 }
@@ -1635,7 +1625,7 @@ void Presenter::UpdateSurfaceMonitorFromUIThread(bool old_monitor_potentially_di
 #if REX_PLATFORM_WIN32
   HMONITOR surface_new_win32_monitor = nullptr;
   if (surface_) {
-    HWND hwnd = static_cast<const Win32Window*>(window_)->hwnd();
+    HWND hwnd = static_cast<HWND>(window_->GetNativeWindowHandle());
     // The HWND may be non-existent if the window has been closed and destroyed
     // (the HWND, not the rex::ui::Window) already.
     if (hwnd) {

@@ -90,8 +90,8 @@ void MaybeDumpLoadedXexImage(const XexModule& module) {
 
   const std::string safe_name = DumpSafeModuleName(module.name());
   const std::filesystem::path image_path =
-      dump_dir / fmt::format("{}_{:08X}_{:08X}.bin", safe_name, module.base_address(),
-                             module.image_size());
+      dump_dir /
+      fmt::format("{}_{:08X}_{:08X}.bin", safe_name, module.base_address(), module.image_size());
   std::ofstream image_file(image_path, std::ios::binary);
   if (!image_file) {
     REXLOG_WARN("Failed to open XEX image dump {}", image_path.string());
@@ -103,8 +103,8 @@ void MaybeDumpLoadedXexImage(const XexModule& module) {
   image_file.close();
 
   const std::filesystem::path meta_path =
-      dump_dir / fmt::format("{}_{:08X}_{:08X}.txt", safe_name, module.base_address(),
-                             module.image_size());
+      dump_dir /
+      fmt::format("{}_{:08X}_{:08X}.txt", safe_name, module.base_address(), module.image_size());
   std::ofstream meta_file(meta_path);
   if (meta_file) {
     meta_file << "name=" << module.name() << "\n";
@@ -313,9 +313,9 @@ int XexModule::ApplyPatch(XexModule* module) {
   // If headers_source_offset is set, copy [source_offset:source_size] to
   // target_offset
   if (patch_header->delta_headers_source_offset) {
-    memcpy(header_ptr + patch_header->delta_headers_target_offset,
-           header_ptr + patch_header->delta_headers_source_offset,
-           patch_header->delta_headers_source_size);
+    memmove(header_ptr + patch_header->delta_headers_target_offset,
+            header_ptr + patch_header->delta_headers_source_offset,
+            patch_header->delta_headers_source_size);
   }
 
   // If new size is smaller than original, null out the difference
@@ -424,9 +424,9 @@ int XexModule::ApplyPatch(XexModule* module) {
   // If image_source_offset is set, copy [source_offset:source_size] to
   // target_offset
   if (patch_header->delta_image_source_offset) {
-    memcpy(base_exe + patch_header->delta_image_target_offset,
-           base_exe + patch_header->delta_image_source_offset,
-           patch_header->delta_image_source_size);
+    memmove(base_exe + patch_header->delta_image_target_offset,
+            base_exe + patch_header->delta_image_source_offset,
+            patch_header->delta_image_source_size);
   }
 
   // TODO: should we use new_image_size here instead?
@@ -835,6 +835,8 @@ int XexModule::ReadPEHeaders() {
   if (opthdr->Subsystem != IMAGE_SUBSYSTEM_XBOX) {
     return 1;
   }
+
+  pe_time_date_stamp_ = filehdr->TimeDateStamp;
 
 // Linker version - likely 8+
 // Could be useful for recognizing certain patterns

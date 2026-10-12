@@ -141,12 +141,12 @@ void DeferredCommandBuffer::Execute(VkCommandBuffer command_buffer) {
 
       case Command::kVkClearDepthStencilImage: {
         auto& args = *reinterpret_cast<const ArgsVkClearDepthStencilImage*>(stream);
-        dfn.vkCmdClearDepthStencilImage(
-            command_buffer, args.image, args.image_layout, &args.depth_stencil, args.range_count,
-            reinterpret_cast<const VkImageSubresourceRange*>(
-                reinterpret_cast<const uint8_t*>(stream) +
-                rex::align(sizeof(ArgsVkClearDepthStencilImage),
-                           alignof(VkImageSubresourceRange))));
+        dfn.vkCmdClearDepthStencilImage(command_buffer, args.image, args.image_layout,
+                                        &args.depth_stencil, args.range_count,
+                                        reinterpret_cast<const VkImageSubresourceRange*>(
+                                            reinterpret_cast<const uint8_t*>(stream) +
+                                            rex::align(sizeof(ArgsVkClearDepthStencilImage),
+                                                       alignof(VkImageSubresourceRange))));
       } break;
 
       case Command::kVkCopyBuffer: {
@@ -291,8 +291,9 @@ void DeferredCommandBuffer::Execute(VkCommandBuffer command_buffer) {
         auto& args = *reinterpret_cast<const ArgsVkPushUniformBufferDescriptorSet*>(stream);
         size_t offset_bytes = rex::align(sizeof(ArgsVkPushUniformBufferDescriptorSet),
                                          alignof(VkDescriptorBufferInfo));
-        const VkDescriptorBufferInfo* buffer_infos = reinterpret_cast<const VkDescriptorBufferInfo*>(
-            reinterpret_cast<const uint8_t*>(stream) + offset_bytes);
+        const VkDescriptorBufferInfo* buffer_infos =
+            reinterpret_cast<const VkDescriptorBufferInfo*>(
+                reinterpret_cast<const uint8_t*>(stream) + offset_bytes);
         constexpr uint32_t kMaxPushedUniformBuffers = 8;
         assert_true(args.buffer_count <= kMaxPushedUniformBuffers);
         VkWriteDescriptorSet writes[kMaxPushedUniformBuffers];

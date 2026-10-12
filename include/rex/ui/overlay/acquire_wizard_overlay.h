@@ -42,13 +42,11 @@ class AcquireWizardDialog final : public ImGuiDialog {
   };
 
   using PickSourceCallback = std::function<std::filesystem::path()>;
-  using InstallCallback = std::function<bool(const std::filesystem::path& source,
-                                             std::atomic<uint64_t>& copied_bytes,
-                                             std::atomic<uint64_t>& total_bytes,
-                                             std::string& error)>;
+  using InstallCallback =
+      std::function<bool(const std::filesystem::path& source, std::atomic<uint64_t>& copied_bytes,
+                         std::atomic<uint64_t>& total_bytes, std::string& error)>;
   using FetchCallback = std::function<bool(std::atomic<uint64_t>& copied_bytes,
-                                           std::atomic<uint64_t>& total_bytes,
-                                           std::string& error)>;
+                                           std::atomic<uint64_t>& total_bytes, std::string& error)>;
   using CompleteCallback = std::function<void()>;
 
   AcquireWizardDialog(ImGuiDrawer* drawer, Options options, FetchCallback fetch,

@@ -978,8 +978,7 @@ void SpirvShaderTranslator::ProcessTextureFetchInstruction(
     spv::Id texture_resolution_scaled = spv::NoResult;
     uint32_t revert_resolution_scale_axes =
         REXCVAR_GET(draw_resolution_scaled_texture_offsets)
-            ? uint32_t(draw_resolution_scale_x_ > 1) |
-                  (uint32_t(draw_resolution_scale_y_ > 1) << 1)
+            ? uint32_t(draw_resolution_scale_x_ > 1) | (uint32_t(draw_resolution_scale_y_ > 1) << 1)
             : 0;
     spv::Id const_texture_resolution_scale[] = {spv::NoResult, spv::NoResult};
     spv::Id const_texture_resolution_scale_reciprocal[] = {spv::NoResult, spv::NoResult};

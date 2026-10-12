@@ -145,10 +145,8 @@ struct NvApiDrs {
         reinterpret_cast<decltype(create_session)>(query_interface(kIdDrsCreateSession));
     destroy_session =
         reinterpret_cast<decltype(destroy_session)>(query_interface(kIdDrsDestroySession));
-    load_settings =
-        reinterpret_cast<decltype(load_settings)>(query_interface(kIdDrsLoadSettings));
-    save_settings =
-        reinterpret_cast<decltype(save_settings)>(query_interface(kIdDrsSaveSettings));
+    load_settings = reinterpret_cast<decltype(load_settings)>(query_interface(kIdDrsLoadSettings));
+    save_settings = reinterpret_cast<decltype(save_settings)>(query_interface(kIdDrsSaveSettings));
     find_profile_by_name =
         reinterpret_cast<decltype(find_profile_by_name)>(query_interface(kIdDrsFindProfileByName));
     create_profile =

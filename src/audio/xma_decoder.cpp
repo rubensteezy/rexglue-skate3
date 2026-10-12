@@ -340,6 +340,7 @@ void XmaDecoder::WriteRegister(uint32_t addr, uint32_t value) {
     if (decode_csr != guest_csr) {
       rex::platform::FPSCRPlatform::setcsr(guest_csr);
     }
+    work_event_->Set();
   } else if (r >= XmaRegister::Context0Lock && r <= XmaRegister::Context9Lock) {
     // Context lock command.
     // This requests a lock by flagging the context.

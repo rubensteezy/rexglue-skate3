@@ -35,10 +35,6 @@
 #include <rex/ui/window.h>
 #include <rex/ui/windowed_app_context.h>
 
-REXCVAR_DEFINE_STRING(trace_gpu_prefix, "", "GPU", "GPU trace file prefix");
-
-REXCVAR_DEFINE_BOOL(trace_gpu_stream, false, "GPU", "Enable GPU trace streaming");
-
 REXCVAR_DEFINE_STRING(swap_post_effect, "none", "GPU", "Swap post effect: none, fxaa, fxaa_extreme")
     .allowed({"none", "fxaa", "fxaa_extreme"})
     .lifecycle(rex::cvar::Lifecycle::kRequiresRestart);
@@ -100,8 +96,8 @@ uint64_t UsToTicksInteger(uint64_t us, uint64_t frequency) {
 void PreciseWaitUntilHostTick(uint64_t target_host_tick, uint64_t host_frequency) {
   const uint64_t sleep_margin_ticks = UsToTicksInteger(
       uint64_t(std::max(0, REXCVAR_GET(vblank_precise_sleep_margin_us))), host_frequency);
-  const uint64_t spin_ticks = UsToTicksInteger(
-      uint64_t(std::max(0, REXCVAR_GET(vblank_precise_spin_us))), host_frequency);
+  const uint64_t spin_ticks =
+      UsToTicksInteger(uint64_t(std::max(0, REXCVAR_GET(vblank_precise_spin_us))), host_frequency);
 
   while (true) {
     uint64_t now = chrono::Clock::QueryHostTickCount();
@@ -234,9 +230,8 @@ X_STATUS GraphicsSystem::SetupGuestGpu(runtime::FunctionDispatcher* function_dis
           double no_vsync_rate_hz = 1000.0;
           if (REXCVAR_GET(vblank_no_vsync_use_present_limiter) &&
               rex::cvar::Query<bool>("d3d12_present_frame_limiter")) {
-            no_vsync_rate_hz =
-                std::clamp(rex::cvar::Query<double>("d3d12_present_frame_limiter_fps"), 1.0,
-                           1000.0);
+            no_vsync_rate_hz = std::clamp(
+                rex::cvar::Query<double>("d3d12_present_frame_limiter_fps"), 1.0, 1000.0);
           }
           return std::max(uint64_t(1), uint64_t(double(frequency) / no_vsync_rate_hz));
         };
@@ -327,10 +322,6 @@ X_STATUS GraphicsSystem::SetupGuestGpu(runtime::FunctionDispatcher* function_dis
   vsync_worker_thread_->set_name("GPU VSync");
   vsync_worker_thread_->Create();
 
-  if (REXCVAR_GET(trace_gpu_stream)) {
-    BeginTracing();
-  }
-
   return X_STATUS_SUCCESS;
 }
 
@@ -338,7 +329,6 @@ void GraphicsSystem::Shutdown() {
   shutting_down_.store(true, std::memory_order_release);
 
   if (command_processor_) {
-    EndTracing();
     command_processor_->Shutdown();
     command_processor_.reset();
   }
@@ -521,18 +511,6 @@ void GraphicsSystem::InitializeShaderStorage(const std::filesystem::path& cache_
       command_processor_->InitializeShaderStorage(cache_root, title_id, false);
     });
   }
-}
-
-void GraphicsSystem::RequestFrameTrace() {
-  command_processor_->RequestFrameTrace(REXCVAR_GET(trace_gpu_prefix));
-}
-
-void GraphicsSystem::BeginTracing() {
-  command_processor_->BeginTracing(REXCVAR_GET(trace_gpu_prefix));
-}
-
-void GraphicsSystem::EndTracing() {
-  command_processor_->EndTracing();
 }
 
 void GraphicsSystem::Pause() {

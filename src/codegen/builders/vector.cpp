@@ -238,8 +238,9 @@ bool build_vaddshs(BuilderContext& ctx) {
 
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 8; ++i) {{");
-  ctx.println("\t\t\tint32_t sum = static_cast<int32_t>({}.s16[i]) + static_cast<int32_t>({}.s16[i]);", vA,
-              vB);
+  ctx.println(
+      "\t\t\tint32_t sum = static_cast<int32_t>({}.s16[i]) + static_cast<int32_t>({}.s16[i]);", vA,
+      vB);
   ctx.println("\t\t\tif (sum > 32767) {{");
   ctx.println("\t\t\t\t{}.s16[i] = 32767;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -262,8 +263,10 @@ bool build_vaddsws(BuilderContext& ctx) {
 
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 4; ++i) {{");
-  ctx.println("\t\t\tlong long sum = static_cast<long long>({}.s32[i]) + static_cast<long long>({}.s32[i]);", vA,
-              vB);
+  ctx.println(
+      "\t\t\tlong long sum = static_cast<long long>({}.s32[i]) + static_cast<long "
+      "long>({}.s32[i]);",
+      vA, vB);
   ctx.println("\t\t\tif (sum > 2147483647LL) {{");
   ctx.println("\t\t\t\t{}.s32[i] = 2147483647;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -320,8 +323,10 @@ bool build_vmhaddshs(BuilderContext& ctx) {
 
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 8; ++i) {{");
-  ctx.println("\t\t\tint32_t value = ((static_cast<int32_t>({}.s16[i]) * static_cast<int32_t>({}.s16[i])) >> 15) + static_cast<int32_t>({}.s16[i]);", vA,
-              vB, vC);
+  ctx.println(
+      "\t\t\tint32_t value = ((static_cast<int32_t>({}.s16[i]) * static_cast<int32_t>({}.s16[i])) "
+      ">> 15) + static_cast<int32_t>({}.s16[i]);",
+      vA, vB, vC);
   ctx.println("\t\t\tif (value > 32767) {{");
   ctx.println("\t\t\t\t{}.s16[i] = 32767;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -344,8 +349,10 @@ bool build_vmhraddshs(BuilderContext& ctx) {
 
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 8; ++i) {{");
-  ctx.println("\t\t\tint32_t value = (((static_cast<int32_t>({}.s16[i]) * static_cast<int32_t>({}.s16[i])) + 0x4000) >> 15) + static_cast<int32_t>({}.s16[i]);", vA,
-              vB, vC);
+  ctx.println(
+      "\t\t\tint32_t value = (((static_cast<int32_t>({}.s16[i]) * static_cast<int32_t>({}.s16[i])) "
+      "+ 0x4000) >> 15) + static_cast<int32_t>({}.s16[i]);",
+      vA, vB, vC);
   ctx.println("\t\t\tif (value > 32767) {{");
   ctx.println("\t\t\t\t{}.s16[i] = 32767;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -367,8 +374,10 @@ bool build_vmladduhm(BuilderContext& ctx) {
   auto vC = ctx.v(ctx.insn.operands[3]);
 
   for (int i = 0; i < 8; ++i) {
-    ctx.println("\t{}.u16[{}] = static_cast<uint16_t>((static_cast<uint32_t>({}.u16[{}]) * static_cast<uint32_t>({}.u16[{}])) + static_cast<uint32_t>({}.u16[{}]));",
-                vD, i, vA, i, vB, i, vC, i);
+    ctx.println(
+        "\t{}.u16[{}] = static_cast<uint16_t>((static_cast<uint32_t>({}.u16[{}]) * "
+        "static_cast<uint32_t>({}.u16[{}])) + static_cast<uint32_t>({}.u16[{}]));",
+        vD, i, vA, i, vB, i, vC, i);
   }
   return true;
 }
@@ -381,9 +390,14 @@ bool build_vmsumubm(BuilderContext& ctx) {
 
   for (int i = 0; i < 4; ++i) {
     const int b = i * 4;
-    ctx.println("\t{}.u32[{}] = {}.u32[{}] + static_cast<uint32_t>({}.u8[{}]) * static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * static_cast<uint32_t>({}.u8[{}]);",
-                vD, i, vC, i, vA, b, vB, b, vA, b + 1, vB, b + 1, vA, b + 2, vB, b + 2, vA, b + 3,
-                vB, b + 3);
+    ctx.println(
+        "\t{}.u32[{}] = {}.u32[{}] + static_cast<uint32_t>({}.u8[{}]) * "
+        "static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * "
+        "static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * "
+        "static_cast<uint32_t>({}.u8[{}]) + static_cast<uint32_t>({}.u8[{}]) * "
+        "static_cast<uint32_t>({}.u8[{}]);",
+        vD, i, vC, i, vA, b, vB, b, vA, b + 1, vB, b + 1, vA, b + 2, vB, b + 2, vA, b + 3, vB,
+        b + 3);
   }
   return true;
 }
@@ -396,9 +410,14 @@ bool build_vmsummbm(BuilderContext& ctx) {
 
   for (int i = 0; i < 4; ++i) {
     const int b = i * 4;
-    ctx.println("\t{}.u32[{}] = static_cast<uint32_t>(static_cast<int64_t>({}.s32[{}]) + static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]));",
-                vD, i, vC, i, vA, b, vB, b, vA, b + 1, vB, b + 1, vA, b + 2, vB, b + 2, vA, b + 3,
-                vB, b + 3);
+    ctx.println(
+        "\t{}.u32[{}] = static_cast<uint32_t>(static_cast<int64_t>({}.s32[{}]) + "
+        "static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + "
+        "static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + "
+        "static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]) + "
+        "static_cast<int64_t>({}.s8[{}]) * static_cast<int64_t>({}.u8[{}]));",
+        vD, i, vC, i, vA, b, vB, b, vA, b + 1, vB, b + 1, vA, b + 2, vB, b + 2, vA, b + 3, vB,
+        b + 3);
   }
   return true;
 }
@@ -411,8 +430,11 @@ bool build_vmsumuhm(BuilderContext& ctx) {
 
   for (int i = 0; i < 4; ++i) {
     const int h = i * 2;
-    ctx.println("\t{}.u32[{}] = {}.u32[{}] + static_cast<uint32_t>({}.u16[{}]) * static_cast<uint32_t>({}.u16[{}]) + static_cast<uint32_t>({}.u16[{}]) * static_cast<uint32_t>({}.u16[{}]);",
-                vD, i, vC, i, vA, h, vB, h, vA, h + 1, vB, h + 1);
+    ctx.println(
+        "\t{}.u32[{}] = {}.u32[{}] + static_cast<uint32_t>({}.u16[{}]) * "
+        "static_cast<uint32_t>({}.u16[{}]) + static_cast<uint32_t>({}.u16[{}]) * "
+        "static_cast<uint32_t>({}.u16[{}]);",
+        vD, i, vC, i, vA, h, vB, h, vA, h + 1, vB, h + 1);
   }
   return true;
 }
@@ -426,8 +448,11 @@ bool build_vmsumuhs(BuilderContext& ctx) {
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 4; ++i) {{");
   ctx.println("\t\t\tint h = i * 2;");
-  ctx.println("\t\t\tuint64_t value = static_cast<uint64_t>({}.u32[i]) + static_cast<uint64_t>({}.u16[h]) * static_cast<uint64_t>({}.u16[h]) + static_cast<uint64_t>({}.u16[h + 1]) * static_cast<uint64_t>({}.u16[h + 1]);",
-              vC, vA, vB, vA, vB);
+  ctx.println(
+      "\t\t\tuint64_t value = static_cast<uint64_t>({}.u32[i]) + static_cast<uint64_t>({}.u16[h]) "
+      "* static_cast<uint64_t>({}.u16[h]) + static_cast<uint64_t>({}.u16[h + 1]) * "
+      "static_cast<uint64_t>({}.u16[h + 1]);",
+      vC, vA, vB, vA, vB);
   ctx.println("\t\t\tif (value > 0xFFFFFFFFULL) {{");
   ctx.println("\t\t\t\t{}.u32[i] = 0xFFFFFFFFu;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -447,8 +472,11 @@ bool build_vmsumshm(BuilderContext& ctx) {
 
   for (int i = 0; i < 4; ++i) {
     const int h = i * 2;
-    ctx.println("\t{}.u32[{}] = static_cast<uint32_t>(static_cast<int64_t>({}.s32[{}]) + static_cast<int64_t>({}.s16[{}]) * static_cast<int64_t>({}.s16[{}]) + static_cast<int64_t>({}.s16[{}]) * static_cast<int64_t>({}.s16[{}]));",
-                vD, i, vC, i, vA, h, vB, h, vA, h + 1, vB, h + 1);
+    ctx.println(
+        "\t{}.u32[{}] = static_cast<uint32_t>(static_cast<int64_t>({}.s32[{}]) + "
+        "static_cast<int64_t>({}.s16[{}]) * static_cast<int64_t>({}.s16[{}]) + "
+        "static_cast<int64_t>({}.s16[{}]) * static_cast<int64_t>({}.s16[{}]));",
+        vD, i, vC, i, vA, h, vB, h, vA, h + 1, vB, h + 1);
   }
   return true;
 }
@@ -462,8 +490,11 @@ bool build_vmsumshs(BuilderContext& ctx) {
   ctx.println("\t{{");
   ctx.println("\t\tfor (int i = 0; i < 4; ++i) {{");
   ctx.println("\t\t\tint h = i * 2;");
-  ctx.println("\t\t\tint64_t value = static_cast<int64_t>({}.s32[i]) + static_cast<int64_t>({}.s16[h]) * static_cast<int64_t>({}.s16[h]) + static_cast<int64_t>({}.s16[h + 1]) * static_cast<int64_t>({}.s16[h + 1]);",
-              vC, vA, vB, vA, vB);
+  ctx.println(
+      "\t\t\tint64_t value = static_cast<int64_t>({}.s32[i]) + static_cast<int64_t>({}.s16[h]) * "
+      "static_cast<int64_t>({}.s16[h]) + static_cast<int64_t>({}.s16[h + 1]) * "
+      "static_cast<int64_t>({}.s16[h + 1]);",
+      vC, vA, vB, vA, vB);
   ctx.println("\t\t\tif (value > 2147483647LL) {{");
   ctx.println("\t\t\t\t{}.s32[i] = 2147483647;", vD);
   ctx.println("\t\t\t\tctx.vscr_sat = 1;");
@@ -1557,8 +1588,8 @@ bool build_vupkd3d128(BuilderContext& ctx) {
       for (size_t i = 0; i < 2; i++) {
         ctx.println("\t{}.f32 = 3.0f;", ctx.temp());
         ctx.println("\t{}.s32 += {}.s16[{}];", ctx.temp(), ctx.v(ctx.insn.operands[1]), 1 - i);
-        ctx.println("\t{}.u32[{}] = {}.u32 == 0x403F8000u ? 0x7FC00000u : {}.u32;",
-                    ctx.v_temp(), 3 - i, ctx.temp(), ctx.temp());
+        ctx.println("\t{}.u32[{}] = {}.u32 == 0x403F8000u ? 0x7FC00000u : {}.u32;", ctx.v_temp(),
+                    3 - i, ctx.temp(), ctx.temp());
       }
       ctx.println("\t{}.f32[1] = 0.0f;", ctx.v_temp());
       ctx.println("\t{}.f32[0] = 1.0f;", ctx.v_temp());

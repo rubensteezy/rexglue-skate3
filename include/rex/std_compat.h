@@ -49,9 +49,7 @@ class move_only_function<R(Args...)> {
     return static_cast<bool>(f);
   }
 
-  R operator()(Args... args) {
-    return callable_->Call(std::forward<Args>(args)...);
-  }
+  R operator()(Args... args) { return callable_->Call(std::forward<Args>(args)...); }
 
  private:
   struct CallableBase {
